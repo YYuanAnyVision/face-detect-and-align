@@ -7,11 +7,7 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-add_library( softcascade softcascade.hpp softcascade.cpp )
-add_executable( train_softcascade main.cpp)
-add_executable( test_s test.cpp)
+add_executable( train_fhogdet main.cpp)
+target_link_libraries(  train_fhogdet  ${OpenCV_LIBS}   ${Boost_LIBRARIES}  chnFeature opencv_libsvm)
 
-target_link_libraries( softcascade nms misc )
-target_link_libraries(  train_softcascade  ${OpenCV_LIBS}   ${Boost_LIBRARIES} softcascade adaboost binaryTree chnFeature nms)
-target_link_libraries(  test_s  ${OpenCV_LIBS}   ${Boost_LIBRARIES} softcascade adaboost binaryTree chnFeature)
 

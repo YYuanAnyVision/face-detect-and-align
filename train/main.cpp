@@ -230,7 +230,7 @@ int main( int argc, char** argv)
 {
 
     /*-----------------------------------------------------------------------------
-     *     setting parameters
+     *    1 setting parameters
      *-----------------------------------------------------------------------------*/
     string groundtruth_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/opencv_gt/";
     string positive_img_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/files/";
@@ -241,8 +241,11 @@ int main( int argc, char** argv)
     int fhog_binsize = 8;
     int fhog_oritention = 9;
     double neg_pos_numbers_ratio = 1.5;
+    int Nthreads = omp_get_max_threads();
 
-
+    /*-----------------------------------------------------------------------------
+     *  2 prepare the data for training 
+     *-----------------------------------------------------------------------------*/
     /*  start training ... */
     int feature_dim = padded_size.width/fhog_binsize*padded_size.height/fhog_binsize*( 3*fhog_oritention+5); 
     vector<Mat> samples;
@@ -251,6 +254,7 @@ int main( int argc, char** argv)
     /*  creating the positive features, row samples */
     Mat positive_feature = Mat::zeros( samples.size(), feature_dim, CV_32F );
     feature_Pyramids feature_generator;
+    #pragma omp parallel for num_threads(Nthreads)
     for( unsigned int c=0;c<samples.size();c++)
     {
         Mat img = samples[c];
@@ -274,6 +278,7 @@ int main( int argc, char** argv)
     
     sampleWins( negative_img_path, "", false, samples, target_size, padded_size, positive_feature.rows*neg_pos_numbers_ratio);
     Mat negative_feature = Mat::zeros( positive_feature.rows*neg_pos_numbers_ratio, feature_dim, CV_32F);
+    #pragma omp parallel for num_threads(Nthreads)
     for( unsigned int c=0;c<samples.size();c++)
     {
         Mat img = samples[c];
@@ -295,11 +300,19 @@ int main( int argc, char** argv)
     cout<<"Negative samples created, number of samples is "<<negative_feature.rows<<", feature dim is "<<negative_feature.cols<<endl;
 
     opencv_warpper_libsvm svm_classifier;
-    svm_node **svm_train_data;
-    svm_classifier.fromMatToLibsvmNode( positive_feature, svm_train_data);
-    cout<<"Generating data used by libsvm"<<endl;
+    svm_parameter svm_para = svm_classifier.getSvmParameters();
+    svm_para.gamma = 1/positive_feature.cols; // 1/number_of_feature
+    svm_classifier.setSvmParameters( svm_para );
+    svm_classifier.train( positive_feature, negative_feature );
+    cout<<"Svm training done "<<endl;
+    
+    
 
 
 
+    /*  train error ? */
+    
+    /* save the trained model */
+    svm_classifier.saveModel( "svm_model.model" );
     return 0;
 }

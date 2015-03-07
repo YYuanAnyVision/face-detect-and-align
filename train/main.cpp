@@ -228,13 +228,12 @@ bool sampleWins(
 
 int main( int argc, char** argv)
 {
-
     /*-----------------------------------------------------------------------------
      *    1 setting parameters
      *-----------------------------------------------------------------------------*/
-    string groundtruth_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/opencv_gt/";
-    string positive_img_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/files/";
-    string negative_img_path = "/media/yuanyang/disk1/data/face_detection_database/nature_image_no_face/";
+    string groundtruth_path = "/mnt/disk1/data/face_detection/GENKI/opencv_gt/";
+    string positive_img_path = "/mnt/disk1/data/face_detection/GENKI/files/";
+    string negative_img_path = "/mnt/disk1/data/INRIAPerson/Train/neg/";
 
     cv::Size target_size( 80, 80);
     cv::Size padded_size( 96, 96);
@@ -303,16 +302,27 @@ int main( int argc, char** argv)
     svm_parameter svm_para = svm_classifier.getSvmParameters();
     svm_para.gamma = 1/positive_feature.cols; // 1/number_of_feature
     svm_classifier.setSvmParameters( svm_para );
-    svm_classifier.train( positive_feature, negative_feature );
+    svm_classifier.train( positive_feature, negative_feature, "face_svm.model");
     cout<<"Svm training done "<<endl;
     
     
+	/*  train error */
+	int number_of_error = 0;
+	Mat predicted_value;
+	svm_classifier.predict( negative_feature, predicted_value );
+	for( int c=0;c<predicted_value.rows;c++)
+	{
+		if(predicted_value.at<float>(c,0) > 0)
+			number_of_error++;
 
-
-
+	}
+	svm_classifier.predict( positive_feature, predicted_value );
+	for( int c=0;c<predicted_value.rows;c++)
+	{
+		if( predicted_value.at<float>(c,0) < 0)
+			number_of_error++;
+	}
+	cout<<"Train error rate is "<<1.0*number_of_error/(negative_feature.rows+positive_feature.rows)<<endl;
     /*  train error ? */
-    
-    /* save the trained model */
-    svm_classifier.saveModel( "svm_model.model" );
     return 0;
 }

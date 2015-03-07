@@ -50,16 +50,8 @@ class opencv_warpper_libsvm
          * =====================================================================================
          */
         bool train( const Mat &positive_data,       //in : positive data, row samples, number_of_samples x feature_dim
-                    const Mat &negative_data);      //in : negative data, row samples, number_of_samples x feature_dim 
-
-
-        /* 
-         * ===  FUNCTION  ======================================================================
-         *         Name:  saveModel
-         *  Description:  save the trained model
-         * =====================================================================================
-         */
-        bool saveModel(  const string &path_to_save) const;
+                    const Mat &negative_data,       //in : negative data, row samples, number_of_samples x feature_dim
+                    const string &path_to_save);    //in : where to save the model file
 
 
         /* 

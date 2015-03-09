@@ -231,9 +231,9 @@ int main( int argc, char** argv)
     /*-----------------------------------------------------------------------------
      *    1 setting parameters
      *-----------------------------------------------------------------------------*/
-    string groundtruth_path = "/mnt/disk1/data/face_detection/GENKI/opencv_gt/";
-    string positive_img_path = "/mnt/disk1/data/face_detection/GENKI/files/";
-    string negative_img_path = "/mnt/disk1/data/INRIAPerson/Train/neg/";
+    string groundtruth_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/opencv_gt/";
+    string positive_img_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/files/";
+    string negative_img_path = "/media/yuanyang/disk1/data/face_detection_database/nature_image_no_face/";
 
     cv::Size target_size( 80, 80);
     cv::Size padded_size( 96, 96);
@@ -312,6 +312,7 @@ int main( int argc, char** argv)
 	svm_classifier.predict( negative_feature, predicted_value );
 	for( int c=0;c<predicted_value.rows;c++)
 	{
+        cout<<"nage : predicted value is "<<predicted_value.at<float>(c,0)<<endl;
 		if(predicted_value.at<float>(c,0) > 0)
 			number_of_error++;
 
@@ -319,10 +320,17 @@ int main( int argc, char** argv)
 	svm_classifier.predict( positive_feature, predicted_value );
 	for( int c=0;c<predicted_value.rows;c++)
 	{
+        cout<<"posi : predicted value is "<<predicted_value.at<float>(c,0)<<endl;
 		if( predicted_value.at<float>(c,0) < 0)
 			number_of_error++;
 	}
 	cout<<"Train error rate is "<<1.0*number_of_error/(negative_feature.rows+positive_feature.rows)<<endl;
+
+    /* Save the weight vector in opencv format */
+    Mat weight_mat = svm_classifier.get_weight_vector();
+    FileStorage fs("svm_weight.xml", FileStorage::WRITE);
+    fs<<"svm_weight"<<weight_mat;
+    fs.release();
     /*  train error ? */
     return 0;
 }

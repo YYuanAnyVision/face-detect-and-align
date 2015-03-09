@@ -18,7 +18,7 @@ opencv_warpper_libsvm::opencv_warpper_libsvm()
     m_svm_para.coef0 = 0;   // need tuning
     m_svm_para.nu = 0.5;
     m_svm_para.cache_size = 300;
-    m_svm_para.C = 1;
+    m_svm_para.C = 10;
     m_svm_para.eps = 1e-3;
     m_svm_para.p = 0.1;
     m_svm_para.shrinking = 1;
@@ -348,4 +348,17 @@ float opencv_warpper_libsvm::get_feature_weight_dot_value( const float *feature 
     }
     sum_value += 1*m_weight_vector_for_linearsvm[ m_feature_dim ];        //plus the bias value
     return sum_value;
+}
+
+
+Mat opencv_warpper_libsvm::get_weight_vector() const
+{
+    if( !m_weight_vector_for_linearsvm )
+        return Mat::zeros(0,0,CV_32F);
+    Mat weight_mat = Mat::zeros( m_feature_dim, 1, CV_32F );
+    
+    for ( unsigned int c=0; c < m_feature_dim; c++) {
+        weight_mat.at<float>(c,0) = m_weight_vector_for_linearsvm[c];
+    }
+    return weight_mat;
 }

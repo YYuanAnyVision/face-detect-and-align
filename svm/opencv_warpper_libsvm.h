@@ -84,6 +84,15 @@ class opencv_warpper_libsvm
         bool predict_linear( const Mat &input_data,     // in : input feature, row format, CV_32F, number_of_sample x feature_dim
                              Mat &predict_value) const; // out: CV_32F, number_of_samples x 1  
 
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  get_weight_vector
+         *  Description:  return the linear svm weight vector in opencv format
+         * =====================================================================================
+         */
+        Mat get_weight_vector() const;
+
     private:
         float get_feature_weight_dot_value( const float *feature ) const;    
 

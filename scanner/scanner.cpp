@@ -127,7 +127,7 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
         return false;
     /*  compute the scales we will work on  */
     vector<double> scale_vec;
-    get_scale_vector( minSize ,maxSize, scale_factor, scale_vec);
+    get_scale_vector( input_image.size(),  minSize ,maxSize, scale_factor, scale_vec);
 
     /* detect target in each scale */
     Mat processing_image;
@@ -161,7 +161,8 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
     return true;
 }
 
-bool scanner::get_scale_vector(  const Size &minSize,            // in : minSize
+bool scanner::get_scale_vector( const Size &img_size,           // in : used to define the min_Scale
+                                const Size &minSize,            // in : minSize
                                 const Size &maxSize,            // in : maxSize
                                 double scale_factor,            // in : scale factor
                                 vector<double> &scale_vec       // out: scale vector
@@ -181,8 +182,10 @@ bool scanner::get_scale_vector(  const Size &minSize,            // in : minSize
     /*  use height to compute the scale vector, "height" is more robust in image than "width" */
     double maxScale = m_target_size.height*1.0 / minSize.height;
     double minScale = m_target_size.height*1.0 / maxSize.height;
+
+    double img_min_scale = max( m_padded_size.width/ img_size.width, m_padded_size.height/ img_size.height);
     
-    double current_scale = minScale;
+    double current_scale = max( minScale, img_min_scale) ;
     while( current_scale < maxScale  )
     {
         scale_vec.push_back( current_scale );

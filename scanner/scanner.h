@@ -86,7 +86,8 @@ class scanner
          *                in order to resize the image
          * =====================================================================================
          */
-        bool get_scale_vector(  const Size &minSize,            // in : minSize
+        bool get_scale_vector(  const Size &img_size,           // in : used to define the min_scale
+                                const Size &minSize,            // in : minSize
                                 const Size &maxSize,            // in : maxSize
                                 double scale_factor,            // in : scale factor
                                 vector<double> &scale_vec       // out: scale vector

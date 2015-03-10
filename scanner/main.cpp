@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "opencv2/highgui/highgui.hpp"
+#include "opencv2/contrib/contrib.hpp"
 #include "scanner.h"
 
 
@@ -20,16 +21,21 @@ int main( int argc, char** argv)
 
     /* test on one image */
     Mat img = imread( argv[1]);
+
+    TickMeter tk;
     vector<Rect> results;
-    vector<float> confs;
-    fhog_sc.slide_image( img, results, confs, 1);
+    vector<double> confs;
+    tk.start();
+    fhog_sc.detectMultiScale( img, results, confs, Size(30,30), Size(400,400), 1.2, 1);
+    tk.stop();
+    cout<<"detect time is "<<tk.getTimeMilli()<<endl;
     cout<<"size of results is "<<results.size()<<endl;
     for( int c=0;c<results.size();c++)
     {
         rectangle(  img, results[c], Scalar(255,0,0), 1);
-        imshow("result", img );
         cout<<"conf is "<<confs[c]<<endl;
-        waitKey(0);
     }
+    imshow("result", img );
+    waitKey(0);
     return 0;
 }

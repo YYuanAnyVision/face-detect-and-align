@@ -84,7 +84,16 @@ class opencv_warpper_libsvm
         bool predict_linear( const Mat &input_data,     // in : input feature, row format, CV_32F, number_of_sample x feature_dim
                              Mat &predict_value) const; // out: CV_32F, number_of_samples x 1  
 
+        
 
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  predict_general
+         *  Description:  predict using libsvm's predict function, general case
+         * =====================================================================================
+         */
+        bool predict_general( const Mat &input_data,    // in : input feature, row format, CV_32F, number_of_sample x feature_dim
+                              Mat &predict_value) const; // out: CV_32F, number_of_samples x 1  
         /* 
          * ===  FUNCTION  ======================================================================
          *         Name:  get_weight_vector

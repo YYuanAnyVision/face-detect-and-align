@@ -77,7 +77,7 @@ bool sampleWins(
                   bool isPositive,                  // in : sample positive or negative
                   vector<Mat> &samples,             // out: sampled windows, maybe agumented by flip
                   cv::Size target_size,             // in : target size
-                  cv::Size padded_size,              // in : padded size
+                  cv::Size padded_size,             // in : padded size
                   int number_of_negative_sample     // in : number of negative samples
                 )
 {
@@ -239,7 +239,7 @@ int main( int argc, char** argv)
     cv::Size padded_size( 96, 96);
     int fhog_binsize = 8;
     int fhog_oritention = 9;
-    double neg_pos_numbers_ratio = 1.5;
+    double neg_pos_numbers_ratio = 5;
     int Nthreads = omp_get_max_threads();
 
     /*-----------------------------------------------------------------------------
@@ -274,9 +274,10 @@ int main( int argc, char** argv)
     }
     cout<<"Positive samples created, number of samples is "<<positive_feature.rows<<", feature dim is "<<positive_feature.cols<<endl;
     /*  creating negative samples , round 1, random select windows */
-    
+    samples.clear();
     sampleWins( negative_img_path, "", false, samples, target_size, padded_size, positive_feature.rows*neg_pos_numbers_ratio);
-    Mat negative_feature = Mat::zeros( positive_feature.rows*neg_pos_numbers_ratio, feature_dim, CV_32F);
+    Mat negative_feature = Mat::zeros( samples.size(), feature_dim, CV_32F);
+
     #pragma omp parallel for num_threads(Nthreads)
     for( unsigned int c=0;c<samples.size();c++)
     {
@@ -300,31 +301,43 @@ int main( int argc, char** argv)
 
     opencv_warpper_libsvm svm_classifier;
     svm_parameter svm_para = svm_classifier.getSvmParameters();
-    svm_para.gamma = 1/positive_feature.cols; // 1/number_of_feature
+    svm_para.gamma = 1.0/positive_feature.cols; // 1/number_of_feature
     svm_classifier.setSvmParameters( svm_para );
     svm_classifier.train( positive_feature, negative_feature, "face_svm.model");
     cout<<"Svm training done "<<endl;
     
     
-	/*  train error */
-	int number_of_error = 0;
-	Mat predicted_value;
-	svm_classifier.predict( negative_feature, predicted_value );
-	for( int c=0;c<predicted_value.rows;c++)
-	{
-        cout<<"nage : predicted value is "<<predicted_value.at<float>(c,0)<<endl;
-		if(predicted_value.at<float>(c,0) > 0)
-			number_of_error++;
+//    Mat general_value, linear_value;
+//    svm_classifier.predict_linear( negative_feature, linear_value );
+//    cout<<"predict using predict_linear done"<<endl;
+//    svm_classifier.predict_general( negative_feature, general_value);
+//    cout<<"predict using predict_general done"<<endl;
+//    for( int c=0;c<general_value.rows;c++)
+//    {
+//        cout<<"general value is "<<general_value.at<float>(c,0)<<" linear value is "<<linear_value.at<float>(c,0)<<endl;
+//    }
 
-	}
-	svm_classifier.predict( positive_feature, predicted_value );
-	for( int c=0;c<predicted_value.rows;c++)
-	{
-        cout<<"posi : predicted value is "<<predicted_value.at<float>(c,0)<<endl;
-		if( predicted_value.at<float>(c,0) < 0)
-			number_of_error++;
-	}
-	cout<<"Train error rate is "<<1.0*number_of_error/(negative_feature.rows+positive_feature.rows)<<endl;
+
+
+	/*  train error */
+    int number_of_error = 0;
+    Mat predicted_value;
+    svm_classifier.predict( negative_feature, predicted_value );
+    for( int c=0;c<predicted_value.rows;c++)
+    {
+        //cout<<"nage : predicted value is "<<predicted_value.at<float>(c,0)<<endl;
+        if(predicted_value.at<float>(c,0) > 0)
+            number_of_error++;
+
+    }
+    svm_classifier.predict( positive_feature, predicted_value );
+    for( int c=0;c<predicted_value.rows;c++)
+    {
+        //cout<<"posi : predicted value is "<<predicted_value.at<float>(c,0)<<endl;
+        if( predicted_value.at<float>(c,0) < 0)
+            number_of_error++;
+    }
+    cout<<"Train error rate is "<<1.0*number_of_error/(negative_feature.rows+positive_feature.rows)<<endl;
 
     /* Save the weight vector in opencv format */
     Mat weight_mat = svm_classifier.get_weight_vector();

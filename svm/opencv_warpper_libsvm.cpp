@@ -17,8 +17,8 @@ opencv_warpper_libsvm::opencv_warpper_libsvm()
     m_svm_para.gamma = 0;	// should be set to 1/num_features
     m_svm_para.coef0 = 0;   // need tuning
     m_svm_para.nu = 0.5;
-    m_svm_para.cache_size = 300;
-    m_svm_para.C = 10;
+    m_svm_para.cache_size = 200;
+    m_svm_para.C = 0.1;
     m_svm_para.eps = 1e-3;
     m_svm_para.p = 0.1;
     m_svm_para.shrinking = 1;
@@ -138,6 +138,7 @@ bool opencv_warpper_libsvm::train(  const Mat &positive_data,       //in : posit
         //for( int c=0;c<m_feature_dim+1;c++)
         //    cout<<m_weight_vector_for_linearsvm[c]<<" ";
         //cout<<endl;
+
 //        Mat pos_pre,neg_pre;
 //        TickMeter tk;tk.start();
 //        predict_linear( positive_data, pos_pre);
@@ -151,7 +152,7 @@ bool opencv_warpper_libsvm::train(  const Mat &positive_data,       //in : posit
 //        {
 //            double svm_predict_value;
 //            svm_predict_values( m_model, svm_train_data[c], &svm_predict_value);
-//			double linear_value  = 0;
+//            double linear_value  = 0;
 //            if( c < positive_data.rows )
 //                linear_value = pos_pre.at<float>(c,0);
 //            else
@@ -247,19 +248,55 @@ bool opencv_warpper_libsvm::predict( const Mat &input_data,         // in : inpu
 	{
 		cout<<"using svm"<<endl;
 		/* use libsvm predict function */
-		svm_node **test_data;
-		fromMatToLibsvmNode( input_data, test_data );
-		predict_value = Mat::zeros( input_data.rows, 1 , CV_32F);
-		for( unsigned int c=0;c<input_data.rows; c++)
-		{
-			double predict_score;
-			svm_predict_values( m_model, test_data[c], &predict_score);
-			predict_value.at<float>(c,0) = (float)predict_score;
-		}
+        return predict_general( input_data, predict_value);
 	}
 
     return true;   
 }
+
+bool opencv_warpper_libsvm::predict_general( const Mat &input_data,    // in : input feature, row format, CV_32F, number_of_sample x feature_dim
+                                            Mat &predict_value) const // out: CV_32F, number_of_samples x 1  
+{
+	/* check the model */
+	if( !m_model )
+	{
+		cout<<"Model file not ready"<<endl;
+		return false;
+	}
+
+	if( input_data.type() != CV_32F || input_data.empty() || !input_data.isContinuous() || input_data.cols != m_feature_dim )
+	{
+		cout<<"Check the input data, should be CV_32F, row format , continuous is memory and feature dimension is "<<m_feature_dim<<endl;
+		return false;
+	}
+
+	svm_node **test_data;
+	fromMatToLibsvmNode( input_data, test_data );
+	predict_value = Mat::zeros( input_data.rows, 1 , CV_32F);
+	for( unsigned int c=0;c<input_data.rows; c++)
+	{
+        cout<<"predicting sample "<<c<<endl;
+		double predict_score;
+		svm_predict_values( m_model, test_data[c], &predict_score);
+		predict_value.at<float>(c,0) = (float)predict_score;
+	}
+    
+    cout<<"clear the memory"<<endl;
+    /*  delete test_data */
+    for( int c=0;c<input_data.rows;c++)
+    {
+        if( test_data[c])
+		{
+            delete [] test_data[c];
+			test_data[c] = NULL;
+		}
+    }
+    delete test_data;
+    test_data = NULL;
+
+    return true;
+}
+
 
 
 bool opencv_warpper_libsvm::extract_weight_vector()
@@ -355,10 +392,11 @@ Mat opencv_warpper_libsvm::get_weight_vector() const
 {
     if( !m_weight_vector_for_linearsvm )
         return Mat::zeros(0,0,CV_32F);
-    Mat weight_mat = Mat::zeros( m_feature_dim, 1, CV_32F );
+    Mat weight_mat = Mat::zeros( m_feature_dim + 1, 1, CV_32F ); // +1 for bias term
     
     for ( unsigned int c=0; c < m_feature_dim; c++) {
         weight_mat.at<float>(c,0) = m_weight_vector_for_linearsvm[c];
     }
+    weight_mat.at<float>(m_feature_dim,0) = m_weight_vector_for_linearsvm[m_feature_dim];       // plus the bias term
     return weight_mat;
 }

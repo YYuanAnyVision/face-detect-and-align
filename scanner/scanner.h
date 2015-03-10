@@ -22,8 +22,8 @@ class scanner
          * =====================================================================================
          */
         bool detectMultiScale( const Mat &input_image,      //in : input image
-                               vector<Rect> results,        //out: output targets' position
-                               vector<float> confidence,    //out: targets' confidence
+                               vector<Rect> &results,       //out: output targets' position
+                               vector<double> &confidence,  //out: targets' confidence
                                const Size &minSize,         //in : min target size 
                                const Size &maxSize,         //in : max target size
                                double scale_factor,         //in : factor to scale the image
@@ -60,7 +60,7 @@ class scanner
          */
         bool slide_image( const Mat &input_img,        // in: input image
                           vector<Rect> &results,        //out: output targets' position
-                          vector<float> &confidence,    //out: targets' confidence
+                          vector<double> &confidence,   //out: targets' confidence
                           int stride_factor=1);        //in : step factor, actual step size will be stride_factor*m_fhog_binsize
 
 
@@ -77,6 +77,21 @@ class scanner
                          const int &y,                          // in : position in y direction
                          const int &slide_width,                // in : slide target's width in feature map
                          const int &slide_height);              // in : slide target's height in feature map
+
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  get_scale_vector
+         *  Description:  givin the maxSize, minSize and scale factor, return the scale vector
+         *                in order to resize the image
+         * =====================================================================================
+         */
+        bool get_scale_vector(  const Size &minSize,            // in : minSize
+                                const Size &maxSize,            // in : maxSize
+                                double scale_factor,            // in : scale factor
+                                vector<double> &scale_vec       // out: scale vector
+                             ) const;
+
 
         /*  Feature Part : fhog */
         int m_fhog_binsize;

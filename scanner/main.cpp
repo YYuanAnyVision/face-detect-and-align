@@ -31,6 +31,8 @@ int main( int argc, char** argv)
     cout<<"size of results is "<<results.size()<<endl;
     for( int c=0;c<results.size();c++)
     {
+        if( confs[c] < 1)
+            continue;
         rectangle(  img, results[c], Scalar(255,0,0), 1);
         cout<<results[c]<<endl;
         cout<<"conf is "<<confs[c]<<endl;

@@ -353,6 +353,8 @@ int main( int argc, char** argv)
     string positive_img_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/files/";
     string negative_img_path = "/media/yuanyang/disk1/data/face_detection_database/non_face/";
 
+    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/renamed_images/";
+
     cv::Size target_size( 80, 80);
     cv::Size padded_size( 96, 96);
     int fhog_binsize = 8;
@@ -471,10 +473,41 @@ int main( int argc, char** argv)
     cout<<"Positive samples created, number of samples is "<<positive_feature.rows<<", feature dim is "<<positive_feature.cols<<endl;
     svm_classifier.train( positive_feature, negative_feature, "face_svm.model");
     cout<<"Training Round 2 done "<<endl;
+    
     /*  save linear weight */
     weight_mat = svm_classifier.get_weight_vector();
     fs.open( "svm_weight_2.xml", FileStorage::WRITE);
     fs<<"svm_weight"<<weight_mat;
     fs.release();
+
+    
+    /*  set the weight vector to the newly trained  */
+    fhog_sc.setParameters( fhog_binsize, fhog_oritention, target_size, padded_size, weight_mat);
+
+    bf::directory_iterator test_path( test_img_folder);
+    bf::directory_iterator end_it;
+    for( bf::directory_iterator file_iter( test_path ); file_iter!=end_it; file_iter++)
+	{
+        string pathname = file_iter->path().string();
+		string extname  = bf::extension( *file_iter);
+		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+			extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+			continue;
+        Mat img = imread( pathname );
+        vector<Rect> det_results;
+        vector<double> det_confs;
+        fhog_sc.detectMultiScale( img, det_results, det_confs, Size(40,40),Size(400,400),1.1,1);
+        for( int c=0;c<det_results.size();c++)
+        {
+            if( det_confs[c] < 1 )
+                continue;
+            rectangle( img, det_results[c], Scalar(188, 45, 213), 2);
+            cout<<"conf is "<<det_confs[c]<<endl;
+        }
+        imshow("show", img);
+        waitKey(0);
+	}
+
+    
     return 0;
 }

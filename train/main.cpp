@@ -14,6 +14,7 @@
 #include "../misc/misc.hpp"
 #include "../chnfeature/Pyramid.h"
 #include "../svm/opencv_warpper_libsvm.h"
+#include "../scanner/scanner.h"
 
 #include <omp.h> 
 
@@ -25,7 +26,10 @@ namespace bl = boost::lambda;
 
 /* extract the center part of the feature( crossponding to the target) , save it as 
  * clomun in output_data(not continuous) */
-void makeTrainData( vector<Mat> &in_data, Mat &output_data, Size modelDs, int binSize)
+void makeTrainData( vector<Mat> &in_data,   // in : input data, a little larger than modelDs
+                    Mat &output_data,       // out: "crop and tiled " feature vector extracted from in_data
+                    Size modelDs,           // in : Size of target
+                    int binSize)            // in : binSize
 {
     assert( output_data.type() == CV_32F);
     assert( in_data[0].type() == CV_32F && in_data[0].isContinuous());
@@ -83,6 +87,10 @@ bool sampleWins(
 {
     cout<<"Sampling  ..."<<endl;
     samples.clear();
+    
+    /*  openmp lock */
+    omp_lock_t image_vector_lock;
+    omp_init_lock(&image_vector_lock);
 
     /*  sampling positive samples , require both imgpath and groundtruth_path */
     if( isPositive )
@@ -93,6 +101,7 @@ bool sampleWins(
         {
             cout<<"pos img or gt path does not exist!"<<endl;
             cout<<"check "<<pos_img_path<<"  and "<<pos_gt_path<<endl;
+            omp_destroy_lock( &image_vector_lock);
             return false;
         }
         
@@ -123,6 +132,7 @@ bool sampleWins(
             /* read the gt according to the image name */
             gt_path_vector.push_back(groundtruth_path + basename + ".xml");
         }
+        cout<<"Scanning folders done, now adding cropped samples"<<endl;
 
         int Nthreads = omp_get_max_threads();
         #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
@@ -136,7 +146,8 @@ bool sampleWins(
             fst.release();
 
             /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
-
+            vector<Mat> ori_obj;
+            vector<Mat> flipped_obj;
             for ( int i=0;i<target_rects.size();i++) 
             {
                 target_rects[i] = resizeToFixedRatio( target_rects[i], target_size.width*1.0/target_size.height, 1); /* respect to height */
@@ -152,12 +163,19 @@ bool sampleWins(
                 /* finally crop the image */
                 Mat target_obj = cropImage( im, target_rects[i]);
                 cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
-                Mat flipped_target; cv::flip( target_obj, flipped_target, 1 );
-                #pragma omp critical
-                {
-                    samples.push_back( target_obj );
-                    samples.push_back( flipped_target);
-                }
+                Mat flipped_target; 
+                cv::flip( target_obj, flipped_target, 1 );
+
+                ori_obj.push_back( target_obj );
+                flipped_obj.push_back( flipped_target );
+            }
+
+            for( unsigned int c=0;c< ori_obj.size();c++)
+            {
+                omp_set_lock( &image_vector_lock);
+                samples.push_back( ori_obj[c] );
+                samples.push_back( flipped_obj[c]);
+                omp_unset_lock( &image_vector_lock);
             }
         }
     }
@@ -168,6 +186,7 @@ bool sampleWins(
 		if(!bf::exists(neg_img_path))
 		{
 			cout<<"negative image folder path "<<neg_img_path<<" dose not exist "<<endl;
+            omp_destroy_lock( &image_vector_lock);
 			return false;
 		}
         int number_of_neg_images = 	getNumberOfFilesInDir( imgpath );
@@ -184,7 +203,7 @@ bool sampleWins(
 				continue;
 			neg_paths.push_back( pathname );
 		}
-        
+        cout<<"Scanning folder done, now adding cropped samples "<<endl;
         int Nthreads = omp_get_max_threads();
         #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
         for ( unsigned int c=0; c<neg_paths.size();c++ ) 
@@ -196,6 +215,7 @@ bool sampleWins(
 			if( target_rects.size() > number_of_sample_per_image)
 			    target_rects.resize( number_of_sample_per_image );
             
+            vector<Mat> ori_obj;
             /*  resize and crop the target image */
             for ( int i=0;i<target_rects.size();i++) 
             {
@@ -212,18 +232,116 @@ bool sampleWins(
                 /* finally crop the image */
                 Mat target_obj = cropImage( img, target_rects[i]);
                 cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
-                #pragma omp critical
-                {
-                    samples.push_back( target_obj );
-                }
+                ori_obj.push_back( target_obj);
             }
+
+             for( int c=0;c<ori_obj.size();c++)
+             {
+                 omp_set_lock( &image_vector_lock);
+                 samples.push_back( ori_obj[c] );
+                 omp_unset_lock( &image_vector_lock);
+             }
 
         }
 
     }
-
+    omp_destroy_lock( &image_vector_lock);
     cout<<"Sampling done ..."<<endl;
     return true;
+}
+
+void miningHardNegativeSample( scanner &fhog_sc,            // in : detector
+                               string negative_img_path,    // in : path of negative image
+                               Size padded_size,            // in : Size of the training example |  -- > used to resize the sample
+                               Size target_size,            // in : Size of the target size      |
+                               vector<Mat> &hard_nega,      // out: hard examples we want
+                               int number_to_sample)        // in : how many to sample
+{
+    cout<<"Start mining negative samples "<<endl;
+    omp_lock_t image_lock;
+    omp_init_lock( &image_lock );
+    bf::path img_path( negative_img_path);
+
+    /* reserve the space for hard_nega */
+    size_t number_of_imgs = getNumberOfFilesInDir( negative_img_path );
+    hard_nega.reserve( number_to_sample );
+
+    /*  how many to sample from each sample  */
+    int numbers_to_sample_each_img = number_to_sample / number_of_imgs + 10;
+    cout<<"numbers_to_sample_each_img is "<<numbers_to_sample_each_img<<endl;
+    cout<<"number of image is "<<number_of_imgs<<endl;
+    
+    if( !bf::exists( img_path) )
+    {
+        cout<<"Path does not exist "<<endl;
+        omp_destroy_lock( &image_lock );
+        return;
+    }
+   
+    vector<string> neg_paths;
+    bf::directory_iterator end_it;
+    for( bf::directory_iterator file_iter(negative_img_path); file_iter!=end_it; file_iter++)
+	{
+        string pathname = file_iter->path().string();
+		string extname  = bf::extension( *file_iter);
+		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+			extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+			continue;
+		neg_paths.push_back( pathname );
+	}
+    
+    std::random_shuffle( neg_paths.begin(), neg_paths.end() );
+
+    int Nthreads = omp_get_max_threads();
+    #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
+    for( unsigned int c=0;c<neg_paths.size(); c++)
+    {
+        cout<<"scanning image "<<c<<" "<<neg_paths[c]<<endl;
+        Mat input_img = imread( neg_paths[c] );
+        vector<Rect> det_target;
+        vector<double> det_confs;
+        fhog_sc.detectMultiScale( input_img, det_target, det_confs, Size(40, 40), Size(200,200), 1.2, 1);
+
+        if( det_target.empty() )
+        {
+            omp_destroy_lock( &image_lock );
+            continue;
+        }
+
+        /*  sample from each image */
+        std::random_shuffle( det_target.begin(), det_target.end() );
+        if( det_target.size() > numbers_to_sample_each_img )
+            det_target.resize( numbers_to_sample_each_img);
+
+        for ( unsigned int i=0; i<det_target.size();i++ ) 
+        {
+            /*  resize  the example to to be a little bit larger than padded_size  */
+            int modelDsBig_width =  padded_size.width + 8;
+            int modelDsBig_height = padded_size.height + 8;
+
+            double w_ratio = modelDsBig_width*1.0/target_size.width;
+            double h_ratio = modelDsBig_height*1.0/target_size.height;
+
+            det_target[i] = resizeBbox( det_target[i], h_ratio, w_ratio);
+            /* finally crop the image */
+            Mat target_obj = cropImage( input_img, det_target[i]);
+            cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
+            if( target_obj.cols < 10 || target_obj.rows < 10 )
+            {
+                cout<<"Wrong"<<endl;
+            }
+            omp_set_lock( &image_lock );
+            hard_nega.push_back( target_obj );
+            omp_unset_lock( &image_lock );
+        }
+       
+    }
+    cout<<"Adding "<<hard_nega.size()<<" samples "<<endl;
+
+    std::random_shuffle( hard_nega.begin(), hard_nega.end());
+    if( hard_nega.size() > number_to_sample )
+        hard_nega.resize( number_to_sample);
+    omp_destroy_lock( &image_lock);
 }
 
 int main( int argc, char** argv)
@@ -233,7 +351,7 @@ int main( int argc, char** argv)
      *-----------------------------------------------------------------------------*/
     string groundtruth_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/opencv_gt/";
     string positive_img_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/files/";
-    string negative_img_path = "/media/yuanyang/disk1/data/face_detection_database/nature_image_no_face/";
+    string negative_img_path = "/media/yuanyang/disk1/data/face_detection_database/non_face/";
 
     cv::Size target_size( 80, 80);
     cv::Size padded_size( 96, 96);
@@ -262,15 +380,6 @@ int main( int argc, char** argv)
         feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);
         Mat stored_feature = positive_feature.row( c );
         makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
-        /*  visualize the feature */
-        //Mat draw;
-        //vector<Mat> zero_pi_channel( f_chns.begin()+18, f_chns.begin()+27);
-        //feature_generator.visualizeHog( zero_pi_channel, draw);
-        //cout<<"feature size "<<fhog_feature.size()<<endl;
-        //cout<<"feature channels "<<f_chns.size()<<endl;
-        //imshow("input", img);
-        //imshow("fhog", draw);
-        //waitKey(0);
     }
     cout<<"Positive samples created, number of samples is "<<positive_feature.rows<<", feature dim is "<<positive_feature.cols<<endl;
     /*  creating negative samples , round 1, random select windows */
@@ -288,17 +397,8 @@ int main( int argc, char** argv)
         Mat stored_feature = negative_feature.row( c );
         makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
         /*  visualize the feature */
-        //Mat draw;
-        //vector<Mat> zero_pi_channel( f_chns.begin()+18, f_chns.begin()+27);
-        //feature_generator.visualizeHog( zero_pi_channel, draw);
-        //cout<<"feature size "<<fhog_feature.size()<<endl;
-        //cout<<"feature channels "<<f_chns.size()<<endl;
-        //imshow("input", img);
-        //imshow("fhog", draw);
-        //waitKey(0);
     }
     cout<<"Negative samples created, number of samples is "<<negative_feature.rows<<", feature dim is "<<negative_feature.cols<<endl;
-
     opencv_warpper_libsvm svm_classifier;
     svm_parameter svm_para = svm_classifier.getSvmParameters();
     svm_para.gamma = 1.0/positive_feature.cols; // 1/number_of_feature
@@ -307,25 +407,12 @@ int main( int argc, char** argv)
     cout<<"Svm training done "<<endl;
     
     
-//    Mat general_value, linear_value;
-//    svm_classifier.predict_linear( negative_feature, linear_value );
-//    cout<<"predict using predict_linear done"<<endl;
-//    svm_classifier.predict_general( negative_feature, general_value);
-//    cout<<"predict using predict_general done"<<endl;
-//    for( int c=0;c<general_value.rows;c++)
-//    {
-//        cout<<"general value is "<<general_value.at<float>(c,0)<<" linear value is "<<linear_value.at<float>(c,0)<<endl;
-//    }
-
-
-
-	/*  train error */
+	/*  -------------------------- train error  Round 1 ---------------------------*/
     int number_of_error = 0;
     Mat predicted_value;
     svm_classifier.predict( negative_feature, predicted_value );
     for( int c=0;c<predicted_value.rows;c++)
     {
-        //cout<<"nage : predicted value is "<<predicted_value.at<float>(c,0)<<endl;
         if(predicted_value.at<float>(c,0) > 0)
             number_of_error++;
 
@@ -333,7 +420,6 @@ int main( int argc, char** argv)
     svm_classifier.predict( positive_feature, predicted_value );
     for( int c=0;c<predicted_value.rows;c++)
     {
-        //cout<<"posi : predicted value is "<<predicted_value.at<float>(c,0)<<endl;
         if( predicted_value.at<float>(c,0) < 0)
             number_of_error++;
     }
@@ -344,6 +430,51 @@ int main( int argc, char** argv)
     FileStorage fs("svm_weight.xml", FileStorage::WRITE);
     fs<<"svm_weight"<<weight_mat;
     fs.release();
-    /*  train error ? */
+
+    
+    /*-----------------------------------------------------------------------------
+     *  now we use the trained svm model to slide on negative imgs, any detected result
+     *  will be included in the negative data as the "hard example ", and retrain the 
+     *  svm model. This will decrease the FP
+     *-----------------------------------------------------------------------------*/
+
+    /*  set scanner */
+    FileStorage ffs("svm_weight.xml", FileStorage::READ);
+    ffs["svm_weight"]>>weight_mat;
+    scanner fhog_sc;
+    fhog_sc.setParameters( fhog_binsize, fhog_oritention, target_size, padded_size, weight_mat);
+    
+    /*  adding hard examples */
+    vector<Mat> hard_examples;
+    int hx_number_to_sample = 6000*3;         //TODO revise this to 3*number_of_positive_samples
+    miningHardNegativeSample( fhog_sc, negative_img_path, padded_size, target_size,  hard_examples, hx_number_to_sample);
+    
+    negative_feature = Mat::zeros( hard_examples.size(), feature_dim, CV_32F);
+    #pragma omp parallel for num_threads(Nthreads)
+    for( unsigned int c=0;c<hard_examples.size();c++)
+    {
+        if( hard_examples[c].empty())
+        {
+            cout<<"hard examples empty "<<endl;
+            continue;
+        }
+        Mat img = hard_examples[c];
+        Mat fhog_feature;
+        vector<Mat> f_chns;
+        feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);
+        Mat stored_feature = negative_feature.row( c );
+        makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
+    }
+
+    /*  Train Round 2 */
+    cout<<"Negative samples created, number of samples is "<<negative_feature.rows<<", feature dim is "<<negative_feature.cols<<endl;
+    cout<<"Positive samples created, number of samples is "<<positive_feature.rows<<", feature dim is "<<positive_feature.cols<<endl;
+    svm_classifier.train( positive_feature, negative_feature, "face_svm.model");
+    cout<<"Training Round 2 done "<<endl;
+    /*  save linear weight */
+    weight_mat = svm_classifier.get_weight_vector();
+    fs.open( "svm_weight_2.xml", FileStorage::WRITE);
+    fs<<"svm_weight"<<weight_mat;
+    fs.release();
     return 0;
 }

@@ -56,7 +56,8 @@ bool scanner::slide_image( const Mat &input_img,        // in: input image
 {
     /*  Compute the fhog feature  */
     vector<Mat> feature_chns;
-    m_feature_geneartor.fhog( input_img, m_computed_feature, feature_chns, 0, m_fhog_binsize, m_fhog_orientation, 0.2); // 0 -> fhog, 0.2 -> clip value
+    Mat computed_feature;
+    m_feature_geneartor.fhog( input_img, computed_feature, feature_chns, 0, m_fhog_binsize, m_fhog_orientation, 0.2); // 0 -> fhog, 0.2 -> clip value
 
     /*  compute useful constant  中国好注释*/
     /*      
@@ -100,7 +101,6 @@ bool scanner::slide_image( const Mat &input_img,        // in: input image
 
     for( unsigned int x=0;x<=feature_width-slide_width;x = x+stride_factor)
     {
-        cout<<"x is "<<x<<endl;
         for( unsigned int y=0;y<feature_heigth-slide_height;y = y+stride_factor)
         {
             /* compute the score in posision(x,y) */
@@ -117,7 +117,7 @@ bool scanner::slide_image( const Mat &input_img,        // in: input image
 
 bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
                                 vector<Rect> &results,       //out: output targets' position
-                                vector<double> &confidence,   //out: targets' confidence
+                                vector<double> &confidence,  //out: targets' confidence
                                 const Size &minSize,         //in : min target size 
                                 const Size &maxSize,         //in : max target size
                                 double scale_factor,         //in : factor to scale the image
@@ -151,6 +151,17 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
             tmp_target.y /= scale_vec[scale_index];
             tmp_target.width /= scale_vec[scale_index];
             tmp_target.height /= scale_vec[scale_index];
+            
+            /*  sometimes the detected result will be slightly out of the image , crop it */
+            if( tmp_target.x < 0)
+                tmp_target.x = 0;
+            if( tmp_target.y < 0)
+                tmp_target.y = 0;
+            if( tmp_target.x + tmp_target.width > input_image.cols)
+                tmp_target.width = input_image.cols - tmp_target.x -1;
+            if( tmp_target.y + tmp_target.height > input_image.rows)
+                tmp_target.height = input_image.rows - tmp_target.y - 1;
+
             results.push_back( tmp_target);
             confidence.push_back( det_confs[c] );
         }
@@ -180,13 +191,14 @@ bool scanner::get_scale_vector( const Size &img_size,           // in : used to 
     }
 
     /*  use height to compute the scale vector, "height" is more robust in image than "width" */
-    double maxScale = m_target_size.height*1.0 / minSize.height;
-    double minScale = m_target_size.height*1.0 / maxSize.height;
+    double max_scale = m_target_size.height*1.0 / minSize.height;
+    double min_scale = m_target_size.height*1.0 / maxSize.height;
 
-    double img_min_scale = max( m_padded_size.width/ img_size.width, m_padded_size.height/ img_size.height);
+    /*  also we should keep the image is larger than the slide_window(size m_padded_size) */
+    double img_min_scale = max( 1.0*m_padded_size.width/ img_size.width, 1.0*m_padded_size.height/ img_size.height);
     
-    double current_scale = max( minScale, img_min_scale) ;
-    while( current_scale < maxScale  )
+    double current_scale = max( min_scale, img_min_scale) ;
+    while( current_scale < max_scale  )
     {
         scale_vec.push_back( current_scale );
         current_scale *= scale_factor;

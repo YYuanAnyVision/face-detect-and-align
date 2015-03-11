@@ -109,8 +109,5 @@ class scanner
 
         /*  Feature generator */
         feature_Pyramids m_feature_geneartor;
-
-        /*  Cache of the feature */
-        Mat m_computed_feature;
 };
 #endif

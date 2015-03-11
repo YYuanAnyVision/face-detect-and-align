@@ -12,7 +12,7 @@ using namespace cv;
 
 int main( int argc, char** argv)
 {
-    FileStorage fs("svm_weight.xml", FileStorage::READ);
+    FileStorage fs("svm_weight_2.xml", FileStorage::READ);
     Mat weight_vector;
     fs["svm_weight"]>>weight_vector;
     
@@ -21,18 +21,18 @@ int main( int argc, char** argv)
 
     /* test on one image */
     Mat img = imread( argv[1]);
-
     TickMeter tk;
     vector<Rect> results;
     vector<double> confs;
     tk.start();
-    fhog_sc.detectMultiScale( img, results, confs, Size(30,30), Size(400,400), 1.2, 1);
+    fhog_sc.detectMultiScale( img, results, confs, Size(40,40), Size(200,200), 1.2, 1);
     tk.stop();
     cout<<"detect time is "<<tk.getTimeMilli()<<endl;
     cout<<"size of results is "<<results.size()<<endl;
     for( int c=0;c<results.size();c++)
     {
         rectangle(  img, results[c], Scalar(255,0,0), 1);
+        cout<<results[c]<<endl;
         cout<<"conf is "<<confs[c]<<endl;
     }
     imshow("result", img );

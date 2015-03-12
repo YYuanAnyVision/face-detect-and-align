@@ -255,8 +255,12 @@ void miningHardNegativeSample( scanner &fhog_sc,            // in : detector
                                Size padded_size,            // in : Size of the training example |  -- > used to resize the sample
                                Size target_size,            // in : Size of the target size      |
                                vector<Mat> &hard_nega,      // out: hard examples we want
-                               int number_to_sample)        // in : how many to sample
+                               int number_to_sample)        // in : how many to sample, -1 to keep all
 {
+    /*  number_of_sample < 0 means keep all hard examples ..., set 30000 to keep memory save */
+    if( number_to_sample < 0 )
+        number_to_sample = 30000;
+
     cout<<"Start mining negative samples "<<endl;
     omp_lock_t image_lock;
     omp_init_lock( &image_lock );
@@ -268,8 +272,6 @@ void miningHardNegativeSample( scanner &fhog_sc,            // in : detector
 
     /*  how many to sample from each sample  */
     int numbers_to_sample_each_img = number_to_sample / number_of_imgs + 10;
-    cout<<"numbers_to_sample_each_img is "<<numbers_to_sample_each_img<<endl;
-    cout<<"number of image is "<<number_of_imgs<<endl;
     
     if( !bf::exists( img_path) )
     {
@@ -336,7 +338,6 @@ void miningHardNegativeSample( scanner &fhog_sc,            // in : detector
         }
        
     }
-    cout<<"Adding "<<hard_nega.size()<<" samples "<<endl;
 
     std::random_shuffle( hard_nega.begin(), hard_nega.end());
     if( hard_nega.size() > number_to_sample )
@@ -355,8 +356,8 @@ int main( int argc, char** argv)
 
     string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/renamed_images/";
 
-    cv::Size target_size( 80, 80);
-    cv::Size padded_size( 96, 96);
+    cv::Size target_size( 64, 64);
+    cv::Size padded_size( 80, 80);
     int fhog_binsize = 8;
     int fhog_oritention = 9;
     double neg_pos_numbers_ratio = 5;
@@ -367,32 +368,36 @@ int main( int argc, char** argv)
      *-----------------------------------------------------------------------------*/
     /*  start training ... */
     int feature_dim = padded_size.width/fhog_binsize*padded_size.height/fhog_binsize*( 3*fhog_oritention+5); 
-    vector<Mat> samples;
-    sampleWins( positive_img_path, groundtruth_path, true, samples,  target_size, padded_size, 0);
+    vector<Mat> pos_samples;
+    sampleWins( positive_img_path, groundtruth_path, true, pos_samples,  target_size, padded_size, 0);
 
     /*  creating the positive features, row samples */
-    Mat positive_feature = Mat::zeros( samples.size(), feature_dim, CV_32F );
+    Mat positive_feature = Mat::zeros( pos_samples.size(), feature_dim, CV_32F );
     feature_Pyramids feature_generator;
     #pragma omp parallel for num_threads(Nthreads)
-    for( unsigned int c=0;c<samples.size();c++)
+    for( unsigned int c=0;c<pos_samples.size();c++)
     {
-        Mat img = samples[c];
+        Mat img = pos_samples[c];
         Mat fhog_feature;
         vector<Mat> f_chns;
         feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);
         Mat stored_feature = positive_feature.row( c );
         makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
     }
-    cout<<"Positive samples created, number of samples is "<<positive_feature.rows<<", feature dim is "<<positive_feature.cols<<endl;
+    cout<<"Positive samples created, number of pos_samples is "<<positive_feature.rows<<", feature dim is "<<positive_feature.cols<<endl;
+    vector<Mat>().swap(pos_samples);        // clear the memory
+
     /*  creating negative samples , round 1, random select windows */
-    samples.clear();
-    sampleWins( negative_img_path, "", false, samples, target_size, padded_size, positive_feature.rows*neg_pos_numbers_ratio);
-    Mat negative_feature = Mat::zeros( samples.size(), feature_dim, CV_32F);
+    vector<Mat> neg_samples;
+    int top_number_of_neg_samples = positive_feature.rows*neg_pos_numbers_ratio;
+
+    sampleWins( negative_img_path, "", false, neg_samples, target_size, padded_size, top_number_of_neg_samples);
+    Mat negative_feature = Mat::zeros( neg_samples.size(), feature_dim, CV_32F);
 
     #pragma omp parallel for num_threads(Nthreads)
-    for( unsigned int c=0;c<samples.size();c++)
+    for( unsigned int c=0;c<neg_samples.size();c++)
     {
-        Mat img = samples[c];
+        Mat img = neg_samples[c];
         Mat fhog_feature;
         vector<Mat> f_chns;
         feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);
@@ -400,7 +405,7 @@ int main( int argc, char** argv)
         makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
         /*  visualize the feature */
     }
-    cout<<"Negative samples created, number of samples is "<<negative_feature.rows<<", feature dim is "<<negative_feature.cols<<endl;
+    cout<<"Negative samples created, number of neg_samples is "<<negative_feature.rows<<", feature dim is "<<negative_feature.cols<<endl;
     opencv_warpper_libsvm svm_classifier;
     svm_parameter svm_para = svm_classifier.getSvmParameters();
     svm_para.gamma = 1.0/positive_feature.cols; // 1/number_of_feature
@@ -448,10 +453,26 @@ int main( int argc, char** argv)
     
     /*  adding hard examples */
     vector<Mat> hard_examples;
-    int hx_number_to_sample = 6000*3;         //TODO revise this to 3*number_of_positive_samples
-    miningHardNegativeSample( fhog_sc, negative_img_path, padded_size, target_size,  hard_examples, hx_number_to_sample);
+    miningHardNegativeSample( fhog_sc, negative_img_path, padded_size, target_size,  hard_examples, -1);
+    cout<<"Adding "<<hard_examples.size()<<" hard examples "<<endl;
     
-    negative_feature = Mat::zeros( hard_examples.size(), feature_dim, CV_32F);
+    vector<Mat> second_neg_samples;
+    if( hard_examples.size() > top_number_of_neg_samples )
+    {
+        std::random_shuffle( hard_examples.begin(), hard_examples.end() );
+        hard_examples.resize( top_number_of_neg_samples );
+        second_neg_samples = hard_examples; // opencv use reference for Mat, it's ok to do that
+    }
+    else
+    {
+        // shrink the previous negative samples
+        std::random_shuffle( neg_samples.begin(), neg_samples.end() );
+        neg_samples.resize( top_number_of_neg_samples - hard_examples.size());
+        second_neg_samples = hard_examples;
+        second_neg_samples.insert( second_neg_samples.end(), neg_samples.begin(), neg_samples.end());
+    }
+    negative_feature = Mat::zeros( second_neg_samples.size() , feature_dim, CV_32F);
+
     #pragma omp parallel for num_threads(Nthreads)
     for( unsigned int c=0;c<hard_examples.size();c++)
     {
@@ -479,35 +500,12 @@ int main( int argc, char** argv)
     fs.open( "svm_weight_2.xml", FileStorage::WRITE);
     fs<<"svm_weight"<<weight_mat;
     fs.release();
-
     
-    /*  set the weight vector to the newly trained  */
+    /*  update the parameters( mainly weight_mat) */
     fhog_sc.setParameters( fhog_binsize, fhog_oritention, target_size, padded_size, weight_mat);
-
-    bf::directory_iterator test_path( test_img_folder);
-    bf::directory_iterator end_it;
-    for( bf::directory_iterator file_iter( test_path ); file_iter!=end_it; file_iter++)
-	{
-        string pathname = file_iter->path().string();
-		string extname  = bf::extension( *file_iter);
-		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
-			extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
-			continue;
-        Mat img = imread( pathname );
-        vector<Rect> det_results;
-        vector<double> det_confs;
-        fhog_sc.detectMultiScale( img, det_results, det_confs, Size(40,40),Size(400,400),1.1,1);
-        for( int c=0;c<det_results.size();c++)
-        {
-            if( det_confs[c] < 1 )
-                continue;
-            rectangle( img, det_results[c], Scalar(188, 45, 213), 2);
-            cout<<"conf is "<<det_confs[c]<<endl;
-        }
-        imshow("show", img);
-        waitKey(0);
-	}
-
-    
+    if(fhog_sc.saveModel("scanner.xml"))
+        cout<<"Model saved"<<endl;
+    else
+        cout<<"Model save failed "<<endl;
     return 0;
 }

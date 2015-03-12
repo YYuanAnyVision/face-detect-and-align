@@ -8,6 +8,8 @@ if (OPENMP_FOUND)
 endif()
 
 add_executable( train_fhogdet main.cpp)
+add_executable( test_model test_model.cpp)
 target_link_libraries(  train_fhogdet  ${OpenCV_LIBS}   ${Boost_LIBRARIES}  chnFeature opencv_libsvm scanner)
+target_link_libraries( test_model  ${OpenCV_LIBS}   ${Boost_LIBRARIES}  chnFeature opencv_libsvm scanner)
 
 

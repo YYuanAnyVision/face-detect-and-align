@@ -274,3 +274,72 @@ bool scanner::checkParameter() const
 }
 
 
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  saveModel
+ *  Description:  save the Model
+ * =====================================================================================
+ */
+bool scanner::saveModel( const string &path_to_save) const // in :  path
+{
+    if(!checkParameter())
+    {
+        cout<<"Model is invalid .."<<endl;
+        return false;
+    }
+
+    FileStorage fs( path_to_save, FileStorage::WRITE);
+    if( !fs.isOpened())
+    {
+        cout<<"Can not open the file "<<path_to_save<<endl;
+        return false;
+    }
+    
+    fs<<"fhog_binsize"<<m_fhog_binsize;
+    fs<<"fhog_orientation"<<m_fhog_orientation;
+    fs<<"target_size"<<m_target_size;
+    fs<<"padded_size"<<m_padded_size;
+    fs<<"weight_vector"<<m_weight_vector;
+    
+    return true;
+}
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  loadModel
+ *  Description:  load the model
+ * =====================================================================================
+ */
+bool scanner::loadModel( const string &path_to_load)        // in : path
+{
+    FileStorage fs( path_to_load, FileStorage::READ);
+    if( !fs.isOpened())
+    {
+        cout<<"Can not open file "<<path_to_load<<endl;
+        return true;
+    }
+    
+    Mat weight_vector;
+    Size padded_size;
+    Size target_size;
+    int feature_dim;
+    int fhog_binsize;
+    int fhog_orientation;
+
+    fs["weight_vector"]>>weight_vector;
+    fs["padded_size"]>>padded_size;
+    fs["fhog_binsize"]>>fhog_binsize;
+    fs["fhog_orientation"]>>fhog_orientation;
+    fs["target_size"]>>target_size;
+
+    setParameters( fhog_binsize, fhog_orientation, target_size, padded_size, weight_vector);
+    if( !checkParameter())
+    {
+        cout<<"Parameters wrong "<<endl;
+        return false;
+    }
+    
+    return true;
+}

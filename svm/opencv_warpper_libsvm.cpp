@@ -17,7 +17,7 @@ opencv_warpper_libsvm::opencv_warpper_libsvm()
     m_svm_para.gamma = 0;	// should be set to 1/num_features
     m_svm_para.coef0 = 0;   // need tuning
     m_svm_para.nu = 0.5;
-    m_svm_para.cache_size = 200;
+    m_svm_para.cache_size = 400;
     m_svm_para.C = 0.1;
     m_svm_para.eps = 1e-3;
     m_svm_para.p = 0.1;

@@ -64,6 +64,23 @@ class scanner
                           int stride_factor=1);        //in : step factor, actual step size will be stride_factor*m_fhog_binsize
 
 
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  saveModel
+         *  Description:  save the Model
+         * =====================================================================================
+         */
+        bool saveModel( const string &path_to_save) const; // in :  path
+        
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  loadModel
+         *  Description:  load the model
+         * =====================================================================================
+         */
+        bool loadModel( const string &path_to_load);        // in : path
     private:
 
         /* 

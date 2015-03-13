@@ -479,14 +479,14 @@ int main( int argc, char** argv)
     negative_feature = Mat::zeros( second_neg_samples.size() , feature_dim, CV_32F);
 
     #pragma omp parallel for num_threads(Nthreads)
-    for( unsigned int c=0;c<hard_examples.size();c++)
+    for( unsigned int c=0;c<second_neg_samples.size();c++)
     {
-        if( hard_examples[c].empty())
+        if( second_neg_samples[c].empty())
         {
             cout<<"hard examples empty "<<endl;
             continue;
         }
-        Mat img = hard_examples[c];
+        Mat img = second_neg_samples[c];
         Mat fhog_feature;
         vector<Mat> f_chns;
         feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);

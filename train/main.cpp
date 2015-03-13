@@ -302,7 +302,8 @@ void miningHardNegativeSample( scanner &fhog_sc,            // in : detector
         Mat input_img = imread( neg_paths[c] );
         vector<Rect> det_target;
         vector<double> det_confs;
-        fhog_sc.detectMultiScale( input_img, det_target, det_confs, Size(40, 40), Size(200,200), 1.2, 1);
+        /*  set the threshold value low, adding more hard exapmle , boost the performance */
+        fhog_sc.detectMultiScale( input_img, det_target, det_confs, Size(40, 40), Size(200,200), 1.2, 1, 0);
 
         if( det_target.empty() )
         {
@@ -357,10 +358,10 @@ int main( int argc, char** argv)
     string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/renamed_images/";
 
     cv::Size target_size( 64, 64);
-    cv::Size padded_size( 80, 80);
+    cv::Size padded_size( 88, 88);
     int fhog_binsize = 8;
     int fhog_oritention = 9;
-    double neg_pos_numbers_ratio = 5;
+    double neg_pos_numbers_ratio = 1.5;
     int Nthreads = omp_get_max_threads();
 
     /*-----------------------------------------------------------------------------
@@ -370,6 +371,11 @@ int main( int argc, char** argv)
     int feature_dim = padded_size.width/fhog_binsize*padded_size.height/fhog_binsize*( 3*fhog_oritention+5); 
     vector<Mat> pos_samples;
     sampleWins( positive_img_path, groundtruth_path, true, pos_samples,  target_size, padded_size, 0);
+
+    //for ( int c=0; c<pos_samples.size(); c++) {
+    //    imshow("show", pos_samples[c]);
+    //    waitKey(0);
+    //}
 
     /*  creating the positive features, row samples */
     Mat positive_feature = Mat::zeros( pos_samples.size(), feature_dim, CV_32F );
@@ -403,7 +409,6 @@ int main( int argc, char** argv)
         feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);
         Mat stored_feature = negative_feature.row( c );
         makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
-        /*  visualize the feature */
     }
     cout<<"Negative samples created, number of neg_samples is "<<negative_feature.rows<<", feature dim is "<<negative_feature.cols<<endl;
     opencv_warpper_libsvm svm_classifier;

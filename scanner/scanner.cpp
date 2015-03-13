@@ -20,6 +20,50 @@ scanner::~scanner()
 
 }
 
+
+bool scanner::visualizeDetector()
+{
+    if(!checkParameter())
+        return false;
+    
+    /*  the struct of the fhog feature */
+    /* 
+     *    2*m_fhog_orientation  --> sensitive orientation channel, 0-2pi
+     *    m_fhog_orientation    --> unsensitive orientation channel, 0-pi
+     *    4 texture channel
+     *    1 zero pad
+     *
+     *    extract the unsensitive orientation channel and show it
+     * */
+     vector<Mat> unsentivechannels;
+     const float *weight_data = (const float*)(m_weight_vector.data);
+
+     for( unsigned int c=0;c<m_fhog_orientation;c++)
+     {
+        Mat tmp_channel = Mat::zeros( m_padded_size.height/m_fhog_binsize, m_padded_size.width/m_fhog_binsize, CV_32F);
+        /*  the weigth on the same orientation bin */
+        const float *weight_pointer1 = weight_data+(c+2*m_fhog_orientation)*( tmp_channel.rows*tmp_channel.cols);
+        const float *weight_pointer2 = weight_data+(c+m_fhog_orientation)*( tmp_channel.rows*tmp_channel.cols);
+        const float *weight_pointer3 = weight_data+(c)*( tmp_channel.rows*tmp_channel.cols);
+
+        for( int r_index=0;r_index<tmp_channel.rows;r_index++)
+        {
+            for( int c_index=0;c_index<tmp_channel.cols;c_index++)
+            {
+                float weight_value = *(weight_pointer1++)+*(weight_pointer2++)+*(weight_pointer3++);
+                tmp_channel.at<float>(r_index, c_index) =( weight_value>0?weight_value:0);
+            }
+        }
+        unsentivechannels.push_back( tmp_channel );
+     }
+     Mat draw;
+     m_feature_geneartor.visualizeHog(unsentivechannels, draw, 20, 0.4);
+     imshow("detector", draw);
+     waitKey(0);
+     return true;
+}
+ 
+
 float scanner::get_score( const vector<Mat> &feature_chns,       // in : input feature channels
                           const int &x,                          // in : position in x direction
                           const int &y,                          // in : position in y direction
@@ -121,7 +165,8 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
                                 const Size &minSize,         //in : min target size 
                                 const Size &maxSize,         //in : max target size
                                 double scale_factor,         //in : factor to scale the image
-                                int stride_factor)           //in : step factor, actual step size will be stride_factor*m_fhog_binsize
+                                int stride_factor,           //in : step factor, actual step size will be stride_factor*m_fhog_binsize
+                                double threshold)            //in : threshold of detection
 {
     if( !checkParameter())
         return false;
@@ -146,6 +191,8 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
         
         for( unsigned int c=0;c<det_results.size();c++)
         {
+            if( det_confs[c] < threshold)
+                continue;
             Rect tmp_target = det_results[c];
             tmp_target.x /= scale_vec[scale_index];
             tmp_target.y /= scale_vec[scale_index];

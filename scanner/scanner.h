@@ -27,7 +27,8 @@ class scanner
                                const Size &minSize,         //in : min target size 
                                const Size &maxSize,         //in : max target size
                                double scale_factor,         //in : factor to scale the image
-                               int stride_factor=1);        //in : step factor, actual step size will be stride_factor*m_fhog_binsize
+                               int stride_factor=1,         //in : step factor, actual step size will be stride_factor*m_fhog_binsize
+                               double threshold =1);         //in : detection threshold
 
 
 
@@ -81,6 +82,16 @@ class scanner
          * =====================================================================================
          */
         bool loadModel( const string &path_to_load);        // in : path
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  visualizeDetector
+         *  Description:  visualize the learned detector, only using the 0-180 part of the 
+         *                fhog feature.
+         * =====================================================================================
+         */
+        bool visualizeDetector();
+     
     private:
 
         /* 

@@ -42,20 +42,20 @@ using namespace dlib;
 int main(int argc, char** argv)
 {  
     /*  test the rect map function */
-    warp_fhog_extractor w_fhog;
-    dlib::rectangle r_in_hog( 12, 13, 12+5, 13+6 );
-    dlib::rectangle r_in_image= w_fhog.feats_to_image( r_in_hog, 8, 1, 1);
-    dlib::rectangle r_in_hog_again= w_fhog.image_to_feats( r_in_image, 8, 1, 1);
-    
-    cout<<"r_begin is "<<r_in_hog.left()<<" "<<r_in_hog.top()<<" "<<r_in_hog.width()<<" "<<r_in_hog.height()<<endl;
-    cout<<"r_in_iamge is "<<r_in_image.left()<<" "<<r_in_image.top()<<" "<<r_in_image.width()<<" "<<r_in_image.height()<<endl;
-    cout<<"r_in_hog_againct is "<<r_in_hog_again.left()<<" "<<r_in_hog_again.top()<<" "<<r_in_hog_again.width()<<" "<<r_in_hog_again.height()<<endl;
+    //warp_fhog_extractor w_fhog;
+    //dlib::rectangle r_in_hog( 12, 13, 12+5, 13+6 );
+    //dlib::rectangle r_in_image= w_fhog.feats_to_image( r_in_hog, 8, 1, 1);
+    //dlib::rectangle r_in_hog_again= w_fhog.image_to_feats( r_in_image, 8, 1, 1);
+    //
+    //cout<<"r_begin is "<<r_in_hog.left()<<" "<<r_in_hog.top()<<" "<<r_in_hog.width()<<" "<<r_in_hog.height()<<endl;
+    //cout<<"r_in_iamge is "<<r_in_image.left()<<" "<<r_in_image.top()<<" "<<r_in_image.width()<<" "<<r_in_image.height()<<endl;
+    //cout<<"r_in_hog_againct is "<<r_in_hog_again.left()<<" "<<r_in_hog_again.top()<<" "<<r_in_hog_again.width()<<" "<<r_in_hog_again.height()<<endl;
 
-    dlib::array2d<bgr_pixel> img;
-    dlib::load_image( img, argv[1]);
-    dlib::array<dlib::array2d<float> >hog;
-    w_fhog( img, hog, 8,1,1);
-
+    //dlib::array2d<bgr_pixel> img;
+    //dlib::load_image( img, argv[1]);
+    //dlib::array<dlib::array2d<float> >hog;
+    //w_fhog( img, hog, 8,1,1);
+	//std::cout<<"feature computation done"<<std::endl;
     try
     {
         // In this example we are going to train a face detector based on the
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
         // example, the image images_train[0] has the faces given by the
         // rectangles in face_boxes_train[0].
         dlib::array<array2d<unsigned char> > images_train, images_test;
-        std::vector<std::vector<rectangle> > face_boxes_train, face_boxes_test;
+        std::vector<std::vector<dlib::rectangle> > face_boxes_train, face_boxes_test;
 
         // Now we load the data.  These XML files list the images in each
         // dataset and also contain the positions of the face boxes.  Obviously
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
         // 5/6.  Recall that HOG detectors work by creating an image pyramid and
         // then running the detector over each pyramid level in a sliding window
         // fashion.   
-        typedef scan_fhog_pyramid<pyramid_down<6> > image_scanner_type; 
+        typedef scan_fhog_pyramid<pyramid_down<6>, warp_fhog_extractor> image_scanner_type; 
         image_scanner_type scanner;
         // The sliding window detector will be 80 pixels wide and 80 pixels tall.
         scanner.set_detection_window_size(80, 80); 
@@ -184,7 +184,7 @@ int main(int argc, char** argv)
         for (unsigned long i = 0; i < images_test.size(); ++i)
         {
             // Run the detector and get the face detections.
-            std::vector<rectangle> dets = detector(images_test[i]);
+            std::vector<dlib::rectangle> dets = detector(images_test[i]);
             win.clear_overlay();
             win.set_image(images_test[i]);
             win.add_overlay(dets, rgb_pixel(255,0,0));
@@ -244,9 +244,10 @@ int main(int argc, char** argv)
         // benefit of this is increased testing speed since it avoids recomputing the HOG
         // features for each run of the detector.  You do this by storing your detectors
         // into a std::vector and then invoking evaluate_detectors() like so:
-        std::vector<object_detector<image_scanner_type> > my_detectors;
-        my_detectors.push_back(detector);
-        std::vector<rectangle> dets = evaluate_detectors(my_detectors, images_train[0]); 
+		//
+        //std::vector<object_detector<image_scanner_type> > my_detectors;
+        //my_detectors.push_back(detector);
+        //std::vector<rectangle> dets = evaluate_detectors(my_detectors, images_train[0]); 
         //
         //
         // Finally, you can add a nuclear norm regularizer to the SVM trainer.  Doing has

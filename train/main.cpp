@@ -351,11 +351,11 @@ int main( int argc, char** argv)
     /*-----------------------------------------------------------------------------
      *    1 setting parameters
      *-----------------------------------------------------------------------------*/
-    string groundtruth_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/opencv_gt/";
-    string positive_img_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/files/";
-    string negative_img_path = "/media/yuanyang/disk1/data/face_detection_database/non_face/";
+    string groundtruth_path = "/mnt/disk1/data/face_detection/GENKI/opencv_gt/";
+    string positive_img_path = "/mnt/disk1/data/face_detection/GENKI/files/";
+    string negative_img_path = "/mnt/disk1/data/INRIAPerson/Train/neg/";
 
-    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/renamed_images/";
+    string test_img_folder = "/mnt/disk1/data/face_detection/GENKI/files/";
 
     cv::Size target_size( 64, 64);
     cv::Size padded_size( 88, 88);

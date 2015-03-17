@@ -3,6 +3,7 @@
 #include <vector>
 #include <dlib/geometry.h>
 #include <dlib/array2d.h>
+#include <dlib/image_transforms.h>
 #include <dlib/image_processing/object_detector_abstract.h>
 #include "opencv2/highgui/highgui.hpp"
 #include "../chnfeature/Pyramid.h"
@@ -34,12 +35,12 @@ class warp_fhog_extractor
         int cell_size = 8,
         int filter_rows_padding = 1,
         int filter_cols_padding = 1
-		)
+		) const
 		{
 			// There is a one pixel border around the image.
-			p -= dlib::point(1,1);
+			//p -= dlib::point(1,1);
 			// There is also a 1 "cell" border around the HOG image formation.
-			return p/cell_size - dlib::point(1,1) + dlib::point((filter_cols_padding-1)/2,(filter_rows_padding-1)/2);
+			return p/cell_size  + dlib::point((filter_cols_padding-1)/2,(filter_rows_padding-1)/2);
 		}
 
 
@@ -52,8 +53,10 @@ class warp_fhog_extractor
             int filter_cols_padding     
             ) const
         {
-			 return dlib::rectangle(image_to_fhog(rect.tl_corner(),cell_size,filter_rows_padding,filter_cols_padding),
-							  image_to_fhog(rect.br_corner(),cell_size,filter_rows_padding,filter_cols_padding));
+            dlib::rectangle copy_rect = rect;
+            dlib::point p1 = image_to_fhog(copy_rect.tl_corner(),cell_size,filter_rows_padding,filter_cols_padding);
+            dlib::point p2 = image_to_fhog(copy_rect.br_corner(),cell_size,filter_rows_padding,filter_cols_padding);
+			 return dlib::rectangle( p1, p2);
         }
             /*!
                 requires
@@ -65,6 +68,28 @@ class warp_fhog_extractor
                       area in the output feature image.
             !*/
 
+
+        inline dlib::point fhog_to_image (
+            dlib::point p,
+            int cell_size = 8,
+            int filter_rows_padding = 1,
+            int filter_cols_padding = 1
+        ) const
+        {
+            // Convert to image space and then set to the center of the cell.
+            dlib::point offset;
+            
+            p = (p-dlib::point((filter_cols_padding-1)/2,(filter_rows_padding-1)/2))*cell_size ;
+            if (p.x() >= 0 && p.y() >= 0) offset = dlib::point(cell_size/2,cell_size/2);
+            if (p.x() <  0 && p.y() >= 0) offset = dlib::point(-cell_size/2,cell_size/2);
+            if (p.x() >= 0 && p.y() <  0) offset = dlib::point(cell_size/2,-cell_size/2);
+            if (p.x() <  0 && p.y() <  0) offset = dlib::point(-cell_size/2,-cell_size/2);
+            return p + offset;
+        }
+
+        
+
+
         dlib::rectangle feats_to_image (
             const dlib::rectangle& rect,
             int cell_size,
@@ -72,9 +97,9 @@ class warp_fhog_extractor
             int filter_cols_padding
             ) const
         {
-            dlib::point top_left  = rect.tl_corner()*cell_size - dlib::point((filter_cols_padding-1)/2,(filter_rows_padding-1)/2)*cell_size;
-            dlib::point bot_right = rect.br_corner()*cell_size - dlib::point((filter_cols_padding-1)/2,(filter_rows_padding-1)/2)*cell_size;
-            return dlib::rectangle( top_left, bot_right );
+              return dlib::rectangle(fhog_to_image(rect.tl_corner(),cell_size,filter_rows_padding,filter_cols_padding),
+                               fhog_to_image(rect.br_corner(),cell_size,filter_rows_padding,filter_cols_padding));
+
         }
             /*!
                 requires
@@ -99,7 +124,6 @@ class warp_fhog_extractor
                 int filter_cols_padding                     // in :
             ) const
 			{
-				std::cout<<"padding is "<<filter_rows_padding<<"  "<<filter_cols_padding<<std::endl;
 				/*  fill the #hog with the fhog feature, use opencv's implementation */
 				/*  since the toMat() function can only perform on the image_type( not const image_type), have to make a copy */
 
@@ -124,14 +148,37 @@ class warp_fhog_extractor
 				/*  copy the data to hog */
 				const int num_planes = 31;
 				hog.set_max_size(num_planes);		// make space for the 31 planes
+				hog.set_size(num_planes);		// make space for the 31 planes
+
+                int hog_row_offset = (filter_rows_padding-1)/2;
+                int hog_col_offset = (filter_cols_padding-1)/2;
+
 				for( unsigned int p_index=0;p_index<num_planes;p_index++)
 				{
-					hog[p_index].set_size( chns[p_index].rows, chns[p_index].cols);
+                    /* like dlib's implementation, adding extra border */
+					hog[p_index].set_size( chns[p_index].rows+filter_rows_padding, chns[p_index].cols+filter_cols_padding);
+                    dlib::assign_all_pixels( hog[p_index], 0);
 					/*  both opencv and array2d hold image in row mahor format */
 					for( unsigned int r_index=0;r_index<chns[p_index].rows;r_index++)
 						for( unsigned int c_index=0;c_index<chns[p_index].cols;c_index++)
-							hog[p_index][r_index][c_index] = chns[p_index].at<float>(r_index,c_index);
+							hog[p_index][hog_row_offset+r_index][hog_col_offset+c_index] = chns[p_index].at<float>(r_index,c_index);
 				}
+                
+                /*  check #hog */
+                //std::cout<<"#hog size is "<<hog.size()<<std::endl;
+                //std::cout<<"#hog max_size is "<<hog.max_size()<<std::endl;
+                //for( unsigned long p_index=0;p_index<num_planes;p_index++)
+                //{
+				//	for( unsigned int r_index=0;r_index<chns[p_index].rows;r_index++)
+                //    {
+				//		for( unsigned int c_index=0;c_index<chns[p_index].cols;c_index++)
+				//			std::cout<<hog[p_index][r_index][c_index]<<" ";
+                //        std::cout<<std::endl;
+                //    }
+                //    std::cout<<"channle "<<p_index<<std::endl;
+                //    int yu;
+                //    std::cin>>yu;
+                //}
 			}
             /*!
                 requires

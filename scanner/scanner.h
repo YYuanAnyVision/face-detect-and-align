@@ -72,7 +72,8 @@ class scanner
          *  Description:  save the Model
          * =====================================================================================
          */
-        bool saveModel( const string &path_to_save) const; // in :  path
+        bool saveModel( const string &path_to_save,      // in :  path
+                        const string &info="") const;   // in : additional information
         
 
         /* 
@@ -137,5 +138,8 @@ class scanner
 
         /*  Feature generator */
         feature_Pyramids m_feature_geneartor;
+
+        /*  additional infos */
+        string m_info;
 };
 #endif

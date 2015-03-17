@@ -33,6 +33,7 @@
 #include <fstream>
 
 #include "warp_fhog_extractor.h"
+#include "../scanner/scanner.h"
 
 using namespace std;
 using namespace dlib;
@@ -41,23 +42,20 @@ using namespace dlib;
 
 int main(int argc, char** argv)
 {  
-    /*  test the rect map function */
-    //warp_fhog_extractor w_fhog;
-    //dlib::rectangle r_in_hog( 12, 13, 12+5, 13+6 );
-    //dlib::rectangle r_in_image= w_fhog.feats_to_image( r_in_hog, 8, 1, 1);
-    //dlib::rectangle r_in_hog_again= w_fhog.image_to_feats( r_in_image, 8, 1, 1);
-    //
-    //cout<<"r_begin is "<<r_in_hog.left()<<" "<<r_in_hog.top()<<" "<<r_in_hog.width()<<" "<<r_in_hog.height()<<endl;
-    //cout<<"r_in_iamge is "<<r_in_image.left()<<" "<<r_in_image.top()<<" "<<r_in_image.width()<<" "<<r_in_image.height()<<endl;
-    //cout<<"r_in_hog_againct is "<<r_in_hog_again.left()<<" "<<r_in_hog_again.top()<<" "<<r_in_hog_again.width()<<" "<<r_in_hog_again.height()<<endl;
-
-    //dlib::array2d<bgr_pixel> img;
-    //dlib::load_image( img, argv[1]);
-    //dlib::array<dlib::array2d<float> >hog;
-    //w_fhog( img, hog, 8,1,1);
-	//std::cout<<"feature computation done"<<std::endl;
     try
     {
+        /*  set parameters*/
+        int fhog_binsize = 8;       /*  called cell_size in dlib's implementation */
+        int fhog_oritent = 9;       /*  fixed to 9 in dlib */
+        cv::Size target_size(80,80);
+        cv::Size padded_size(80+2*fhog_binsize, 80+2*fhog_binsize);     /* in dlib, the paddedsize is fixed to this */
+        
+
+        /*  paras for training */
+        int number_of_thread = 4;
+        double svm_c = 1;
+        double epsilon = 0.01;
+
         // In this example we are going to train a face detector based on the
         // small faces dataset in the examples/faces directory.  So the first
         // thing we do is load that dataset.  This means you need to supply the
@@ -135,19 +133,19 @@ int main(int argc, char** argv)
         // then running the detector over each pyramid level in a sliding window
         // fashion.   
         typedef scan_fhog_pyramid<pyramid_down<6>, warp_fhog_extractor> image_scanner_type; 
-        image_scanner_type scanner;
+        image_scanner_type Scanner;
         // The sliding window detector will be 80 pixels wide and 80 pixels tall.
-        scanner.set_detection_window_size(80, 80); 
-        structural_object_detection_trainer<image_scanner_type> trainer(scanner);
+        Scanner.set_detection_window_size( target_size.width, target_size.height); 
+        structural_object_detection_trainer<image_scanner_type> trainer(Scanner);
         // Set this to the number of processing cores on your machine.
-        trainer.set_num_threads(4);  
+        trainer.set_num_threads(number_of_thread);  
         // The trainer is a kind of support vector machine and therefore has the usual SVM
         // C parameter.  In general, a bigger C encourages it to fit the training data
         // better but might lead to overfitting.  You must find the best C value
         // empirically by checking how well the trained detector works on a test set of
         // images you haven't trained on.  Don't just leave the value set at 1.  Try a few
         // different C values and see what works best for your data.
-        trainer.set_c(1);
+        trainer.set_c(svm_c);
         // We can tell the trainer to print it's progress to the console if we want.  
         trainer.be_verbose();
         // The trainer will run until the "risk gap" is less than 0.01.  Smaller values
@@ -155,7 +153,7 @@ int main(int argc, char** argv)
         // take longer to train.  For most problems a value in the range of 0.1 to 0.01 is
         // plenty accurate.  Also, when in verbose mode the risk gap is printed on each
         // iteration so you can see how close it is to finishing the training.  
-        trainer.set_epsilon(0.01);
+        trainer.set_epsilon(epsilon);
 
 
         // Now we run the trainer.  For this example, it should take on the order of 10
@@ -202,8 +200,33 @@ int main(int argc, char** argv)
         deserialize("face_detector.svm") >> detector2;
 
 
+        /*  this is how to extract the weight vector from the trained detector */
+        int w_dim = detector.get_scanner().get_num_dimensions();
+        std::cout<<"Number of dimension is "<<w_dim<<std::endl;
+        dlib::matrix<double,0,1> w_ma;
+        w_ma.set_size( w_dim+1, 1);
+        w_ma = detector.get_w(0);
+        //std::cout<<"w_ma' size is "<<w_ma.nr()<<" "<<w_ma.nc()<<endl;
+        //for(unsigned int r_index=0;r_index<w_ma.nr();r_index++)
+        //    for ( unsigned int c_index=0;c_index<w_ma.nc(); c_index++) {
+        //        cout<<"w ("<<r_index<<","<<c_index<<") is "<<w_ma(r_index, c_index)<<std::endl;
+        //    }
+        
+        /*  save to opencv format */
+        cv::Mat weight_mat = Mat::zeros( w_dim+1, 1, CV_32F);
+        for(unsigned int r_index=0;r_index<w_ma.nr();r_index++)
+            for ( unsigned int c_index=0;c_index<w_ma.nc(); c_index++)
+                weight_mat.at<float>(r_index, c_index) = w_ma(r_index, c_index);
+
+        cv::FileStorage fs("dlib_weight.xml", cv::FileStorage::WRITE);
+        fs<<"svm_weight"<<weight_mat;
+        fs.release();
 
 
+        /*  save the learning weight vector to opencv format */
+        scanner fhog_scanner;
+        fhog_scanner.setParameters( fhog_binsize, fhog_oritent, target_size, padded_size, weight_mat);
+        fhog_scanner.saveModel( "dlib_svm_model.xml","dlib_version");
         // Now let's talk about some optional features of this training tool as well as some
         // important points you should understand.
         //
@@ -256,7 +279,7 @@ int main(int argc, char** argv)
         // It can also help with generalization since it tends to make the learned HOG
         // filters smoother.  To enable this option you call the following function before
         // you create the trainer object:
-        //    scanner.set_nuclear_norm_regularization_strength(1.0);
+        //    Scanner.set_nuclear_norm_regularization_strength(1.0);
         // The argument determines how important it is to have a small nuclear norm.  A
         // bigger regularization strength means it is more important.  The smaller the
         // nuclear norm the smoother and faster the learned HOG filters will be, but if the
@@ -273,6 +296,19 @@ int main(int argc, char** argv)
         // detector will run.  However, a large enough threshold will hurt detection
         // accuracy.  
 
+
+        /*  now save the new weight */
+        w_ma = detector.get_w(0);
+        /*  save to opencv format */
+        weight_mat = Mat::zeros( w_dim+1, 1, CV_32F);
+        for(unsigned int r_index=0;r_index<w_ma.nr();r_index++)
+            for ( unsigned int c_index=0;c_index<w_ma.nc(); c_index++)
+                weight_mat.at<float>(r_index, c_index) = w_ma(r_index, c_index);
+
+        fs.open("dlib_weight_new.xml", cv::FileStorage::WRITE);
+        fs<<"svm_weight"<<weight_mat;
+        fs.release();
+        
     }
     catch (exception& e)
     {

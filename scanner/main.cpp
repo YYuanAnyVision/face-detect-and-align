@@ -12,15 +12,10 @@ using namespace cv;
 
 int main( int argc, char** argv)
 {
-    FileStorage fs("svm_weight_2.xml", FileStorage::READ);
-    Mat weight_vector;
-    fs["svm_weight"]>>weight_vector;
-    
     scanner fhog_sc;
-    fhog_sc.setParameters( 8, 9, Size(80,80), Size(96,96), weight_vector );
-
+    fhog_sc.loadModel( string(argv[1]));
     /* test on one image */
-    Mat img = imread( argv[1]);
+    Mat img = imread( argv[2]);
     TickMeter tk;
     vector<Rect> results;
     vector<double> confs;

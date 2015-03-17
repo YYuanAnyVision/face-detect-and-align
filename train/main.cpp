@@ -351,11 +351,11 @@ int main( int argc, char** argv)
     /*-----------------------------------------------------------------------------
      *    1 setting parameters
      *-----------------------------------------------------------------------------*/
-    string groundtruth_path = "/mnt/disk1/data/face_detection/GENKI/opencv_gt/";
-    string positive_img_path = "/mnt/disk1/data/face_detection/GENKI/files/";
-    string negative_img_path = "/mnt/disk1/data/INRIAPerson/Train/neg/";
+    string groundtruth_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/opencv_gt/";
+    string positive_img_path = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/GENKI/GENKI-R2009a/files/";
+    string negative_img_path = "/media/yuanyang/disk1/data/face_detection_database/non_face/";
 
-    string test_img_folder = "/mnt/disk1/data/face_detection/GENKI/files/";
+    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/renamed_images/";
 
     cv::Size target_size( 64, 64);
     cv::Size padded_size( 88, 88);
@@ -368,7 +368,7 @@ int main( int argc, char** argv)
      *  2 prepare the data for training 
      *-----------------------------------------------------------------------------*/
     /*  start training ... */
-    int feature_dim = padded_size.width/fhog_binsize*padded_size.height/fhog_binsize*( 3*fhog_oritention+5); 
+    int feature_dim = padded_size.width/fhog_binsize*padded_size.height/fhog_binsize*( 3*fhog_oritention+4); 
     vector<Mat> pos_samples;
     sampleWins( positive_img_path, groundtruth_path, true, pos_samples,  target_size, padded_size, 0);
 
@@ -387,6 +387,8 @@ int main( int argc, char** argv)
         Mat fhog_feature;
         vector<Mat> f_chns;
         feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);
+        /* remove the "zero" channel in then end*/
+        f_chns.resize(f_chns.size()-1);
         Mat stored_feature = positive_feature.row( c );
         makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
     }
@@ -407,6 +409,8 @@ int main( int argc, char** argv)
         Mat fhog_feature;
         vector<Mat> f_chns;
         feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);
+        /* remove the "zero" channel in then end*/
+        f_chns.resize(f_chns.size()-1);
         Mat stored_feature = negative_feature.row( c );
         makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
     }
@@ -490,6 +494,8 @@ int main( int argc, char** argv)
         Mat fhog_feature;
         vector<Mat> f_chns;
         feature_generator.fhog( img, fhog_feature, f_chns, 0, fhog_binsize, fhog_oritention, 0.2);
+        /* remove the "zero" channel in then end*/
+        f_chns.resize(f_chns.size()-1);
         Mat stored_feature = negative_feature.row( c );
         makeTrainData(  f_chns , stored_feature ,padded_size, fhog_binsize);
     }
@@ -508,7 +514,7 @@ int main( int argc, char** argv)
     
     /*  update the parameters( mainly weight_mat) */
     fhog_sc.setParameters( fhog_binsize, fhog_oritention, target_size, padded_size, weight_mat);
-    if(fhog_sc.saveModel("scanner.xml"))
+    if(fhog_sc.saveModel("scanner.xml", "libsvm_type"))
         cout<<"Model saved"<<endl;
     else
         cout<<"Model save failed "<<endl;

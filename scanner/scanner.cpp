@@ -102,6 +102,8 @@ bool scanner::slide_image( const Mat &input_img,        // in: input image
     vector<Mat> feature_chns;
     Mat computed_feature;
     m_feature_geneartor.fhog( input_img, computed_feature, feature_chns, 0, m_fhog_binsize, m_fhog_orientation, 0.2); // 0 -> fhog, 0.2 -> clip value
+    /* remove the all zero channel */
+    feature_chns.resize( feature_chns.size()-1);
 
     /*  compute useful constant  中国好注释*/
     /*      
@@ -328,7 +330,8 @@ bool scanner::checkParameter() const
  *  Description:  save the Model
  * =====================================================================================
  */
-bool scanner::saveModel( const string &path_to_save) const // in :  path
+bool scanner::saveModel( const string &path_to_save,    // in : path
+                         const string &infos ) const    // in : informations
 {
     if(!checkParameter())
     {
@@ -347,6 +350,7 @@ bool scanner::saveModel( const string &path_to_save) const // in :  path
     fs<<"fhog_orientation"<<m_fhog_orientation;
     fs<<"target_size"<<m_target_size;
     fs<<"padded_size"<<m_padded_size;
+    fs<<"infos"<<infos;
     fs<<"weight_vector"<<m_weight_vector;
     
     return true;
@@ -380,6 +384,7 @@ bool scanner::loadModel( const string &path_to_load)        // in : path
     fs["fhog_binsize"]>>fhog_binsize;
     fs["fhog_orientation"]>>fhog_orientation;
     fs["target_size"]>>target_size;
+    fs["infos"]>>m_info;
 
     setParameters( fhog_binsize, fhog_orientation, target_size, padded_size, weight_vector);
     if( !checkParameter())

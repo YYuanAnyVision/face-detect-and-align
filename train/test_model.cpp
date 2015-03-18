@@ -45,8 +45,8 @@ bool isSameTarget( Rect r1, Rect r2)
 int main( int argc , char ** argv)
 {
     string model_path = argv[1];
-    string test_img_folder = "/media/yuanyang/disk1/libs/dlib-18.10/examples/faces/";
-    string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/convert_opencv/";
+    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/imgs/";
+    string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/gts/";
 
     TickMeter tk;
 
@@ -84,7 +84,7 @@ int main( int argc , char ** argv)
     int number_of_fn = 0;
     int number_of_wrong = 0;
     int Nthreads = omp_get_max_threads();
-    //#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fn) reduction( +: number_of_wrong ) reduction(+:number_of_target)
+    #pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fn) reduction( +: number_of_wrong ) reduction(+:number_of_target)
     for( int i=0;i<image_path_vector.size(); i++)
 	{ 
 		// reading groundtruth...
@@ -99,17 +99,17 @@ int main( int argc , char ** argv)
 		Mat test_img = imread( image_path_vector[i]);
 		vector<Rect> det_rects;
 		vector<double> det_confs;
-        fhog_sc.detectMultiScale( test_img, det_rects, det_confs, Size(40,40),Size(300,300),1.2,1,1);
+        fhog_sc.detectMultiScale( test_img, det_rects, det_confs, Size(40,40),Size(300,300),1.2,1,0);
 
 
         /* debug show */
-        for ( int c=0;c<det_rects.size() ; c++) {
-            rectangle( test_img, det_rects[c], Scalar(0,0,255), 2);
-            cout<<"conf is "<<det_confs[c]<<endl;
-        }
-        cout<<endl;
-        imshow("test", test_img);
-        waitKey(0);
+        //for ( int c=0;c<det_rects.size() ; c++) {
+        //    rectangle( test_img, det_rects[c], Scalar(0,0,255), 2);
+        //    cout<<"conf is "<<det_confs[c]<<endl;
+        //}
+        //cout<<endl;
+        //imshow("test", test_img);
+        //waitKey(0);
 
 		int matched = 0;
 		vector<bool> isMatched_r( target_rects.size(), false);

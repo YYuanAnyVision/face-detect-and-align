@@ -62,7 +62,8 @@ class scanner
         bool slide_image( const Mat &input_img,        // in: input image
                           vector<Rect> &results,        //out: output targets' position
                           vector<double> &confidence,   //out: targets' confidence
-                          int stride_factor=1);        //in : step factor, actual step size will be stride_factor*m_fhog_binsize
+                          int stride_factor=1,        //in : step factor, actual step size will be stride_factor*m_fhog_binsize
+                          double threshold=0);             //in : serve as a threshold
 
 
 

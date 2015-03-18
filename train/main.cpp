@@ -357,8 +357,8 @@ int main( int argc, char** argv)
 
     string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/renamed_images/";
 
-    cv::Size target_size( 64, 64);
-    cv::Size padded_size( 88, 88);
+    cv::Size target_size( 80, 80);
+    cv::Size padded_size( 96, 96);
     int fhog_binsize = 8;
     int fhog_oritention = 9;
     double neg_pos_numbers_ratio = 1.5;

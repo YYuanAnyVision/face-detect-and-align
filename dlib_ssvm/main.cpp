@@ -53,8 +53,8 @@ int main(int argc, char** argv)
 
         /*  paras for training */
         int number_of_thread = 4;
-        double svm_c = 1;
-        double epsilon = 0.01;
+        double svm_c = 10;
+        double epsilon = 0.01*svm_c;
 
         // In this example we are going to train a face detector based on the
         // small faces dataset in the examples/faces directory.  So the first
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
         // with boxes.  To see how to use it read the tools/imglab/README.txt
         // file.
         load_image_dataset(images_train, face_boxes_train, faces_directory+"/training.xml");
-        load_image_dataset(images_test, face_boxes_test, faces_directory+"/testing.xml");
+        //load_image_dataset(images_test, face_boxes_test, faces_directory+"/testing.xml");
 
         // Now we do a little bit of pre-processing.  This is optional but for
         // this training data it improves the results.  The first thing we do is
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
         // appropriate adjustments to the face boxes so that they still fall on
         // top of the faces after the images are resized.
         upsample_image_dataset<pyramid_down<2> >(images_train, face_boxes_train);
-        upsample_image_dataset<pyramid_down<2> >(images_test,  face_boxes_test);
+        //upsample_image_dataset<pyramid_down<2> >(images_test,  face_boxes_test);
         // Since human faces are generally left-right symmetric we can increase
         // our training dataset by adding mirrored versions of each image back
         // into images_train.  So this next step doubles the size of our
@@ -121,7 +121,8 @@ int main(int argc, char** argv)
         // many object detection tasks.
         add_image_left_right_flips(images_train, face_boxes_train);
         cout << "num training images: " << images_train.size() << endl;
-        cout << "num testing images:  " << images_test.size() << endl;
+        //cout << "num testing images:  " << images_test.size() << endl;
+
 
 
         // Finally we get to the training code.  dlib contains a number of
@@ -155,7 +156,8 @@ int main(int argc, char** argv)
         // iteration so you can see how close it is to finishing the training.  
         trainer.set_epsilon(epsilon);
 
-
+        //   remove_unobtainable_rectangles(trainer, images_train, face_boxes_train)
+        //
         // Now we run the trainer.  For this example, it should take on the order of 10
         // seconds to train.
         object_detector<image_scanner_type> detector = trainer.train(images_train, face_boxes_train);
@@ -166,7 +168,7 @@ int main(int argc, char** argv)
         // However, to get an idea if it really worked without overfitting we need to run
         // it on images it wasn't trained on.  The next line does this.  Happily, we see
         // that the object detector works perfectly on the testing images.
-        cout << "testing results:  " << test_object_detection_function(detector, images_test, face_boxes_test) << endl;
+        //cout << "testing results:  " << test_object_detection_function(detector, images_test, face_boxes_test) << endl;
 
 
         // If you have read any papers that use HOG you have probably seen the nice looking
@@ -217,11 +219,9 @@ int main(int argc, char** argv)
         for(unsigned int r_index=0;r_index<w_ma.nr();r_index++)
             for ( unsigned int c_index=0;c_index<w_ma.nc(); c_index++)
                 weight_mat.at<float>(r_index, c_index) = w_ma(r_index, c_index);
-
-        cv::FileStorage fs("dlib_weight.xml", cv::FileStorage::WRITE);
-        fs<<"svm_weight"<<weight_mat;
-        fs.release();
-
+        
+        /*  change the last bias term */
+        weight_mat.at<float>(w_dim,0) *= -1.0;
 
         /*  save the learning weight vector to opencv format */
         scanner fhog_scanner;
@@ -305,9 +305,10 @@ int main(int argc, char** argv)
             for ( unsigned int c_index=0;c_index<w_ma.nc(); c_index++)
                 weight_mat.at<float>(r_index, c_index) = w_ma(r_index, c_index);
 
-        fs.open("dlib_weight_new.xml", cv::FileStorage::WRITE);
-        fs<<"svm_weight"<<weight_mat;
-        fs.release();
+        weight_mat.at<float>(w_dim,0) *= -1.0;
+
+        fhog_scanner.setParameters( fhog_binsize, fhog_oritent, target_size, padded_size, weight_mat);
+        fhog_scanner.saveModel( "dlib_svm_model_nu.xml","dlib_version");
         
     }
     catch (exception& e)

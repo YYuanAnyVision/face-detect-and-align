@@ -57,7 +57,7 @@ bool scanner::visualizeDetector()
         unsentivechannels.push_back( tmp_channel );
      }
      Mat draw;
-     m_feature_geneartor.visualizeHog(unsentivechannels, draw, 20, 0.4);
+     m_feature_geneartor.visualizeHog(unsentivechannels, draw, 20, 0.1);
      imshow("detector", draw);
      waitKey(0);
      return true;
@@ -96,7 +96,8 @@ float scanner::get_score( const vector<Mat> &feature_chns,       // in : input f
 bool scanner::slide_image( const Mat &input_img,        // in: input image
                            vector<Rect> &results,       //out: output targets' position
                            vector<double> &confidence,   //out: targets' confidence
-                           int stride_factor)           //in : step factor, actual step size will be stride_factor*m_fhog_binsize
+                           int stride_factor,           //in : step factor, actual step size will be stride_factor*m_fhog_binsize
+                           double threshold)            // in : threshold
 {
     /*  Compute the fhog feature  */
     vector<Mat> feature_chns;
@@ -151,7 +152,7 @@ bool scanner::slide_image( const Mat &input_img,        // in: input image
         {
             /* compute the score in posision(x,y) */
             float det_score = get_score( feature_chns, x, y, slide_width, slide_height);
-            if( det_score > 0)
+            if( det_score > threshold)
             {
                 results.push_back( Rect( x*m_fhog_binsize, y*m_fhog_binsize, m_padded_size.width, m_padded_size.height) );
                 confidence.push_back( det_score );
@@ -189,7 +190,7 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
         /*  compute stride in each scale */
         int s_stride = int(stride_factor*scale_vec[scale_index]);
         s_stride = s_stride < 1?1:s_stride;
-        slide_image( processing_image, det_results, det_confs, s_stride );
+        slide_image( processing_image, det_results, det_confs, s_stride, threshold);
         
         for( unsigned int c=0;c<det_results.size();c++)
         {
@@ -201,6 +202,12 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
             tmp_target.width /= scale_vec[scale_index];
             tmp_target.height /= scale_vec[scale_index];
             
+            /*  convert from padded_size to target_size */
+            tmp_target.x += tmp_target.width*1.0*(m_padded_size.width-m_target_size.width)/(2*m_padded_size.width);
+            tmp_target.y += tmp_target.height*1.0*(m_padded_size.height-m_target_size.height)/(2*m_padded_size.height);
+            tmp_target.width *= 1.0*m_target_size.width/m_padded_size.width;
+            tmp_target.height *= 1.0*m_target_size.height/m_padded_size.height;
+
             /*  sometimes the detected result will be slightly out of the image , crop it */
             if( tmp_target.x < 0)
                 tmp_target.x = 0;

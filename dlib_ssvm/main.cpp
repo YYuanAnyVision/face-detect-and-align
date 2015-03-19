@@ -112,8 +112,14 @@ int main(int argc, char** argv)
         // in addition to resizing the images, these functions also make the
         // appropriate adjustments to the face boxes so that they still fall on
         // top of the faces after the images are resized.
-        upsample_image_dataset<pyramid_down<2> >(images_train, face_boxes_train);
+        
+        /* cost  memory when training on a large database, but large image is also good for performance
+         *   tradeoff , more data or bigger image ... ????
+         * */
+       // upsample_image_dataset<pyramid_down<2> >(images_train, face_boxes_train);
         //upsample_image_dataset<pyramid_down<2> >(images_test,  face_boxes_test);
+
+
         // Since human faces are generally left-right symmetric we can increase
         // our training dataset by adding mirrored versions of each image back
         // into images_train.  So this next step doubles the size of our
@@ -156,7 +162,11 @@ int main(int argc, char** argv)
         // iteration so you can see how close it is to finishing the training.  
         trainer.set_epsilon(epsilon);
 
-        //   remove_unobtainable_rectangles(trainer, images_train, face_boxes_train)
+        long number_of_removed_rects = 0;
+        std::vector<std::vector<dlib::rectangle> > removed_rects = remove_unobtainable_rectangles(trainer, images_train, face_boxes_train);
+        for(long i=0;i<removed_rects.size();i++)
+            number_of_removed_rects +=removed_rects[i].size();
+        cout<<"Removed "<<number_of_removed_rects<<" rects that can not be obtained"<<endl;
         //
         // Now we run the trainer.  For this example, it should take on the order of 10
         // seconds to train.

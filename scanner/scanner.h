@@ -99,7 +99,7 @@ class scanner
         /* 
          * ===  FUNCTION  ======================================================================
          *         Name:  get_score
-         *  Description:  get the svm score in position (x,y)
+         *  Description:  get the svm score in position (x,y), mainly: weight'*input_feature
          * =====================================================================================
          */
         float get_score( const vector<Mat> &feature_chns,       // in : input feature channels
@@ -107,6 +107,13 @@ class scanner
                          const int &y,                          // in : position in y direction
                          const int &slide_width,                // in : slide target's width in feature map
                          const int &slide_height);              // in : slide target's height in feature map
+
+        /*  same with get_score, but use SSE to speed up */
+        float get_score_sse( const vector<Mat> &feature_chns,       // in : input feature channels
+                             const int &x,                          // in : position in x direction
+                             const int &y,                          // in : position in y direction
+                             const int &slide_width,                // in : slide target's width in feature map
+                             const int &slide_height);              // in : slide target's height in feature map
 
 
         /* 
@@ -123,6 +130,15 @@ class scanner
                                 vector<double> &scale_vec       // out: scale vector
                              ) const;
 
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  load_weight_to_filters
+         *  Description:  seperate the weight vector to numbers of filter matrix, later use convolution
+         *                to do the detection
+         * =====================================================================================
+         */
+        bool load_weight_to_filters();
 
         /*  Feature Part : fhog */
         int m_fhog_binsize;
@@ -142,5 +158,8 @@ class scanner
 
         /*  additional infos */
         string m_info;
+
+        /*  filters */
+        std::vector<cv::Mat> m_filters;
 };
 #endif

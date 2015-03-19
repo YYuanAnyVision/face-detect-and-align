@@ -37,9 +37,6 @@ class warp_fhog_extractor
         int filter_cols_padding = 1
 		) const
 		{
-			// There is a one pixel border around the image.
-			//p -= dlib::point(1,1);
-			// There is also a 1 "cell" border around the HOG image formation.
 			return p/cell_size  + dlib::point((filter_cols_padding-1)/2,(filter_rows_padding-1)/2);
 		}
 

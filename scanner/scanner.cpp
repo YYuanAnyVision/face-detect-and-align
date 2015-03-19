@@ -2,13 +2,18 @@
 #include <cmath>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/contrib/contrib.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+
 #include "../chnfeature/Pyramid.h"
 #include "../misc/NonMaxSupress.h"
+
+#include "../chnfeature/sseFun.h"
 
 #include "scanner.h"
 
 using namespace cv;
 using namespace std;
+
 
 scanner::scanner()
 {
@@ -62,7 +67,48 @@ bool scanner::visualizeDetector()
      waitKey(0);
      return true;
 }
- 
+
+float scanner::get_score_sse( const vector<Mat> &feature_chns,       // in : input feature channels
+                              const int &x,                          // in : position in x direction
+                              const int &y,                          // in : position in y direction
+                              const int &slide_width,                // in : slide target's width in feature map
+                              const int &slide_height)               // in : slide target's height in feature map
+{
+    if(slide_width%4!=0 || m_feature_dim%4!=0 || slide_height%4!=0)
+        return get_score(feature_chns,x,y,slide_width,slide_height);
+    /*  useful constant */
+    const int feature_width = feature_chns[0].cols;
+    const int feature_height = feature_chns[0].rows;
+
+    float sum_score = 0.0f;
+    const int block_size = 4; // 4 float numbers
+    int number_of_block = m_feature_dim/block_size;
+    __m128 _m_input_feature;
+    __m128 _m_weight_vector;
+    __m128 _m_sum = _mm_setzero_ps();
+    float sum_vec[4];
+    const float* _ptr_input_feature = NULL;
+    const float* _ptr_weight_vector = m_weight;
+    
+    for ( unsigned int channel_index=0;channel_index<feature_chns.size();channel_index++) 
+    {
+        const float *channel_ptr = (const float*)( feature_chns[channel_index].data);
+        for( unsigned int y_index=0;y_index<slide_height;y_index++)         // unfold the for loop by factor block_size
+        {
+            const float* feature_ptr=channel_ptr+(y+y_index)*(feature_width)+x;
+            _ptr_input_feature = feature_ptr;
+            for( unsigned int i=0; i<slide_width/block_size; i++)
+            {
+                _m_sum = ADD(_m_sum, MUL(LDu( *_ptr_input_feature), LDu(*_ptr_weight_vector)));
+                _ptr_input_feature += block_size;
+                _ptr_weight_vector += block_size;
+            }
+        }
+    }
+    STRu( *sum_vec,_m_sum);
+    sum_score = sum_vec[0]+sum_vec[1]+sum_vec[2]+sum_vec[3]+m_weight[m_feature_dim];
+    return sum_score;
+}
 
 float scanner::get_score( const vector<Mat> &feature_chns,       // in : input feature channels
                           const int &x,                          // in : position in x direction
@@ -73,7 +119,7 @@ float scanner::get_score( const vector<Mat> &feature_chns,       // in : input f
     /*  useful constant */
     const int feature_width = feature_chns[0].cols;
     const int feature_height = feature_chns[0].rows;
-
+    
     float sum_score = 0.0f;
     long counter = 0;
     for( unsigned int channel_index = 0;channel_index<feature_chns.size();channel_index++)
@@ -103,6 +149,7 @@ bool scanner::slide_image( const Mat &input_img,        // in: input image
     vector<Mat> feature_chns;
     Mat computed_feature;
     m_feature_geneartor.fhog( input_img, computed_feature, feature_chns, 0, m_fhog_binsize, m_fhog_orientation, 0.2); // 0 -> fhog, 0.2 -> clip value
+    
     /* remove the all zero channel */
     feature_chns.resize( feature_chns.size()-1);
 
@@ -146,19 +193,65 @@ bool scanner::slide_image( const Mat &input_img,        // in: input image
     const int slide_width  = m_padded_size.width/m_fhog_binsize;
     const int slide_height = m_padded_size.height/m_fhog_binsize;
 
-    for( unsigned int x=0;x<=feature_width-slide_width;x = x+stride_factor)
+//    for( unsigned int x=0;x<=feature_width-slide_width;x = x+stride_factor)
+//    {
+//        for( unsigned int y=0;y<feature_heigth-slide_height;y = y+stride_factor)
+//        {
+//            /* compute the score in posision(x,y) */
+//#ifdef HAVE_SSE
+//            //TickMeter tk;
+//            //tk.start();
+//            float det_score = get_score_sse( feature_chns, x, y, slide_width, slide_height);
+//            //tk.stop();
+//            //cout<<"time 1 is "<<tk.getTimeMilli()<<endl;
+//#else
+//            //tk.reset();tk.start();
+//            float det_score = get_score( feature_chns, x, y, slide_width, slide_height);
+//            //tk.stop();
+//            //cout<<"time 2 is "<<tk.getTimeMilli()<<endl;
+//            //int a;
+//            //cin>>a;
+//#endif
+//            if( det_score > threshold)
+//            {
+//                results.push_back( Rect( x*m_fhog_binsize, y*m_fhog_binsize, m_padded_size.width, m_padded_size.height) );
+//                confidence.push_back( det_score );
+//            }
+//        }
+//    }
+    /*  store the detect confidence */
+
+    if( m_filters.size() != feature_chns.size())
     {
-        for( unsigned int y=0;y<feature_heigth-slide_height;y = y+stride_factor)
+        cout<<"number of channels should equal the number of filters "<<endl;
+        return false;
+    }
+
+    Mat saliency_map = Mat::zeros( feature_chns[0].size(), CV_32F);
+    Mat tmp_saliency;
+    for(unsigned int c=0;c<m_filters.size();c++)
+    {
+        cv::filter2D( feature_chns[c], tmp_saliency, CV_32F, m_filters[c] );
+        saliency_map = saliency_map + tmp_saliency;
+    }
+    
+    /*  add the bias term */
+    saliency_map = saliency_map + m_weight_vector.at<float>(m_feature_dim,0);
+    for(unsigned int r=0;r<saliency_map.rows;r++)
+    {
+        for(unsigned int c=0;c<saliency_map.cols;c++)
         {
-            /* compute the score in posision(x,y) */
-            float det_score = get_score( feature_chns, x, y, slide_width, slide_height);
-            if( det_score > threshold)
+            if(saliency_map.at<float>(r,c) > threshold)
             {
-                results.push_back( Rect( x*m_fhog_binsize, y*m_fhog_binsize, m_padded_size.width, m_padded_size.height) );
-                confidence.push_back( det_score );
+                results.push_back(cv::Rect( (c-slide_width/2)*m_fhog_binsize, 
+                                            (r-slide_height/2)*m_fhog_binsize, 
+                                            m_padded_size.width, 
+                                            m_padded_size.height));
+                confidence.push_back(saliency_map.at<float>(r,c));
             }
         }
     }
+
     return true;
 }
 
@@ -400,5 +493,49 @@ bool scanner::loadModel( const string &path_to_load)        // in : path
         return false;
     }
     
+    /*  load the weight to filter matrix */
+    if(!load_weight_to_filters())
+    {
+        cout<<"Can not load_weight_to_filters "<<endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool scanner::load_weight_to_filters()
+{
+    if(m_weight_vector.empty())
+        return false;
+
+    // 4 texture, m_fhog_orientation insensitiev channel, 2*m_fhog_orientation sensitive channel
+    int number_of_channels = m_fhog_orientation*3+4; 
+    
+    int filter_width  = m_padded_size.width/m_fhog_binsize;
+    int filter_height = m_padded_size.height/m_fhog_binsize;
+
+    /*  check another time */
+    if(filter_width*filter_height*number_of_channels!= std::max(m_weight_vector.cols-1, m_weight_vector.rows-1))
+    {
+        cout<<"filter's size shoule equals feature's dim or length of m_weight_vector"<<endl;
+        return false;
+    }
+
+    /* load to the filter matrix */
+    int counter = 0;
+    m_filters.reserve(number_of_channels);
+    for(unsigned int i=0;i<number_of_channels;i++)
+    {
+        Mat filter = Mat::zeros(filter_height, filter_width, CV_32F);
+        /* assign, row major*/
+        for(unsigned int r=0;r<filter.rows;r++)
+        {
+            for(unsigned int c=0;c<filter.cols;c++)
+            {
+                filter.at<float>(r,c)=m_weight_vector.at<float>(counter++,0);
+            }
+        }
+        m_filters.push_back( filter);
+    }
     return true;
 }

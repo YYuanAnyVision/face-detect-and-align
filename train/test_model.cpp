@@ -20,7 +20,7 @@
 
 
 
-//#define SAVE_IMAGE
+#define SAVE_IMAGE
 
 using namespace std;
 using namespace cv;
@@ -47,6 +47,7 @@ int main( int argc , char ** argv)
     string model_path = argv[1];
     string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/imgs/";
     string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/gts/";
+    double detect_threshold = 0.5;
 
     TickMeter tk;
 
@@ -84,11 +85,12 @@ int main( int argc , char ** argv)
     int number_of_fn = 0;
     int number_of_wrong = 0;
     int Nthreads = omp_get_max_threads();
+    tk.start();
     #pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fn) reduction( +: number_of_wrong ) reduction(+:number_of_target)
     for( int i=0;i<image_path_vector.size(); i++)
 	{ 
 		// reading groundtruth...
-        cout<<"processing image "<<image_path_vector[i]<<endl;
+        //cout<<"processing image "<<image_path_vector[i]<<endl;
 		vector<Rect> target_rects;
         FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
         fst["boxes"]>>target_rects;
@@ -99,12 +101,12 @@ int main( int argc , char ** argv)
 		Mat test_img = imread( image_path_vector[i]);
 		vector<Rect> det_rects;
 		vector<double> det_confs;
-        fhog_sc.detectMultiScale( test_img, det_rects, det_confs, Size(40,40),Size(300,300),1.2,1,0);
+        fhog_sc.detectMultiScale( test_img, det_rects, det_confs, Size(40,40),Size(300,300),1.2,1, detect_threshold);
 
 
         /* debug show */
         //for ( int c=0;c<det_rects.size() ; c++) {
-        //    rectangle( test_img, det_rects[c], Scalar(0,0,255), 2);
+        //    rectangle( test_img, det_rects[c], Scalar(0,0,255), 3);
         //    cout<<"conf is "<<det_confs[c]<<endl;
         //}
         //cout<<endl;
@@ -161,11 +163,14 @@ int main( int argc , char ** argv)
             }
         }
 	}
+    tk.stop();
     cout<<"number of targets is "<<number_of_target<<endl;
     cout<<"number of fn is "<<number_of_fn<<endl;
     cout<<"number of fp is "<<number_of_wrong<<endl;
 
     cout<<"hit --- > "<<1.0*(number_of_target - number_of_fn)/number_of_target<<endl;
     cout<<"FPPI --- > "<<1.0*(number_of_wrong)/image_path_vector.size()<<endl;
+    cout<<"detect_threshold is "<<detect_threshold<<endl;
+    cout<<"ave time is "<<tk.getTimeMilli()/image_path_vector.size()<<" ms per image"<<endl;
     return 0;
 }

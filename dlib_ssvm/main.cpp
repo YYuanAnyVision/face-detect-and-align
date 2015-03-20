@@ -52,7 +52,7 @@ int main(int argc, char** argv)
         
 
         /*  paras for training */
-        int number_of_thread = 4;
+        int number_of_thread = 1;
         double svm_c = 10;
         double epsilon = 0.01*svm_c;
 
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
         /* cost  memory when training on a large database, but large image is also good for performance
          *   tradeoff , more data or bigger image ... ????
          * */
-       // upsample_image_dataset<pyramid_down<2> >(images_train, face_boxes_train);
+        upsample_image_dataset<pyramid_down<2> >(images_train, face_boxes_train);
         //upsample_image_dataset<pyramid_down<2> >(images_test,  face_boxes_test);
 
 

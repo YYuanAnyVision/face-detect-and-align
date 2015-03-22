@@ -30,6 +30,35 @@ namespace bl = boost::lambda;
 
 int main( int argc , char ** argv)
 {
+	/*  test the svd function */
+	Mat g = (Mat_<double>(3,3)<<0.011343736558495, 
+								0.083819505802211,
+								0.011343736558495,
+								0.083819505802211,
+								0.619347030557177,
+								0.083819505802211,
+								0.011343736558495,
+								0.083819505802211,
+								0.011343736558495);
+	Mat w,u,vt;
+	SVD::compute(g, w, u , vt);
+	cout<<"g's type is "<<g.type()<<endl;
+	cout<<"w's type is "<<w.type()<<endl;
+	cout<<"u's type is "<<u.type()<<endl;
+	cout<<"v's type is "<<vt.type()<<endl;
+
+	cout<<"w is \n"<<w<<endl;
+	cout<<"u is \n"<<u<<endl;
+	cout<<"vt is \n"<<vt<<endl;
+
+	cout<<" g is \n"<<g<<endl;
+	cout<<"get g back \n"<<u.col(0)*w.col(0).row(0)*vt.row(0)<<endl;
+
+	double min_w, max_w;
+	cv::Point min_p,max_p;
+	minMaxLoc( w, &min_w, &max_w, &min_p, &max_p );
+	cout<<"min_w is "<<min_w<<", max_w is "<<max_w<<" min_p is "<<min_p<<", max_p is "<<max_p<<endl;
+	
 
     string model_path = argv[1];
     string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/imgs/";

@@ -95,27 +95,6 @@ class scanner
         bool visualizeDetector();
      
     private:
-
-        /* 
-         * ===  FUNCTION  ======================================================================
-         *         Name:  get_score
-         *  Description:  get the svm score in position (x,y), mainly: weight'*input_feature
-         * =====================================================================================
-         */
-        float get_score( const vector<Mat> &feature_chns,       // in : input feature channels
-                         const int &x,                          // in : position in x direction
-                         const int &y,                          // in : position in y direction
-                         const int &slide_width,                // in : slide target's width in feature map
-                         const int &slide_height);              // in : slide target's height in feature map
-
-        /*  same with get_score, but use SSE to speed up */
-        float get_score_sse( const vector<Mat> &feature_chns,       // in : input feature channels
-                             const int &x,                          // in : position in x direction
-                             const int &y,                          // in : position in y direction
-                             const int &slide_width,                // in : slide target's width in feature map
-                             const int &slide_height);              // in : slide target's height in feature map
-
-
         /* 
          * ===  FUNCTION  ======================================================================
          *         Name:  get_scale_vector
@@ -140,6 +119,20 @@ class scanner
          */
         bool load_weight_to_filters();
 
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  form_filter_bank
+		 *  Description:  decompose the m_filters into row filter and col filter if possible
+		 *				  using seperable filter is way faster
+		 * =====================================================================================
+		 */
+		bool form_filter_bank(
+								const double relative_ratio_to_max = 0.001	/*  in : if a filter's singular value less than relative_ratio_to_max*max_singular_value
+																					 it will be discarded, DO NOT set this too large*/
+								);
+
         /*  Feature Part : fhog */
         int m_fhog_binsize;
         int m_fhog_orientation;
@@ -159,7 +152,13 @@ class scanner
         /*  additional infos */
         string m_info;
 
-        /*  filters */
+        /*  filters, m_filters are the original filter kernel,
+		 *  but if it's seperable, we'd like to use row_filter
+		 *  and col_filter to reduce the computation, formed by
+		 *  form_filter_bank() function */
         std::vector<cv::Mat> m_filters;
+		std::vector<std::vector<cv::Mat> > m_row_filters; /* m_row_filters.size() == m_filters.size(), m_row_filters[i] contains r seperable filter*/
+		std::vector<std::vector<cv::Mat> > m_col_filters; /* which is produced by m_filters[i], see SVD and seperable convolution */
+
 };
 #endif

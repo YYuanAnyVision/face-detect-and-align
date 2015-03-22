@@ -68,82 +68,11 @@ bool scanner::visualizeDetector()
      return true;
 }
 
-float scanner::get_score_sse( const vector<Mat> &feature_chns,       // in : input feature channels
-                              const int &x,                          // in : position in x direction
-                              const int &y,                          // in : position in y direction
-                              const int &slide_width,                // in : slide target's width in feature map
-                              const int &slide_height)               // in : slide target's height in feature map
-{
-    if(slide_width%4!=0 || m_feature_dim%4!=0 || slide_height%4!=0)
-        return get_score(feature_chns,x,y,slide_width,slide_height);
-    /*  useful constant */
-    const int feature_width = feature_chns[0].cols;
-    const int feature_height = feature_chns[0].rows;
-
-    float sum_score = 0.0f;
-    const int block_size = 4; // 4 float numbers
-    int number_of_block = m_feature_dim/block_size;
-    __m128 _m_input_feature;
-    __m128 _m_weight_vector;
-    __m128 _m_sum = _mm_setzero_ps();
-    float sum_vec[4];
-    const float* _ptr_input_feature = NULL;
-    const float* _ptr_weight_vector = m_weight;
-    
-    for ( unsigned int channel_index=0;channel_index<feature_chns.size();channel_index++) 
-    {
-        const float *channel_ptr = (const float*)( feature_chns[channel_index].data);
-        for( unsigned int y_index=0;y_index<slide_height;y_index++)         // unfold the for loop by factor block_size
-        {
-            const float* feature_ptr=channel_ptr+(y+y_index)*(feature_width)+x;
-            _ptr_input_feature = feature_ptr;
-            for( unsigned int i=0; i<slide_width/block_size; i++)
-            {
-                _m_sum = ADD(_m_sum, MUL(LDu( *_ptr_input_feature), LDu(*_ptr_weight_vector)));
-                _ptr_input_feature += block_size;
-                _ptr_weight_vector += block_size;
-            }
-        }
-    }
-    STRu( *sum_vec,_m_sum);
-    sum_score = sum_vec[0]+sum_vec[1]+sum_vec[2]+sum_vec[3]+m_weight[m_feature_dim];
-    return sum_score;
-}
-
-float scanner::get_score( const vector<Mat> &feature_chns,       // in : input feature channels
-                          const int &x,                          // in : position in x direction
-                          const int &y,                          // in : position in y direction
-                          const int &slide_width,                // in : slide target's width in feature map
-                          const int &slide_height)               // in : slide target's height in feature map
-{
-    /*  useful constant */
-    const int feature_width = feature_chns[0].cols;
-    const int feature_height = feature_chns[0].rows;
-    
-    float sum_score = 0.0f;
-    long counter = 0;
-    for( unsigned int channel_index = 0;channel_index<feature_chns.size();channel_index++)
-    {
-        const float *channel_ptr = (const float*)( feature_chns[channel_index].data);
-        for( unsigned int y_index=0;y_index<slide_height;y_index++)
-        {
-            const float* feature_ptr = channel_ptr + (y+y_index)*(feature_width) + x;
-            for( unsigned int x_index=0;x_index<slide_width;x_index++)
-            {
-                sum_score +=feature_ptr[x_index]*m_weight[counter++];   
-            }
-        }
-    }
-    sum_score += m_weight[m_feature_dim];       // plus the bias term
-    return sum_score;
-}
-
-
-bool scanner::slide_image( const Mat &input_img,        // in: input image
+bool scanner::slide_image( const Mat &input_img,		// in: input image
                            vector<Rect> &results,       //out: output targets' position
-                           vector<double> &confidence,   //out: targets' confidence
+                           vector<double> &confidence,	//out: targets' confidence
                            int stride_factor,           //in : step factor, actual step size will be stride_factor*m_fhog_binsize
-                           double threshold)            // in : threshold
+                           double threshold)            //in : threshold
 {
     /*  Compute the fhog feature  */
     vector<Mat> feature_chns;
@@ -193,34 +122,7 @@ bool scanner::slide_image( const Mat &input_img,        // in: input image
     const int slide_width  = m_padded_size.width/m_fhog_binsize;
     const int slide_height = m_padded_size.height/m_fhog_binsize;
 
-//    for( unsigned int x=0;x<=feature_width-slide_width;x = x+stride_factor)
-//    {
-//        for( unsigned int y=0;y<feature_heigth-slide_height;y = y+stride_factor)
-//        {
-//            /* compute the score in posision(x,y) */
-//#ifdef HAVE_SSE
-//            //TickMeter tk;
-//            //tk.start();
-//            float det_score = get_score_sse( feature_chns, x, y, slide_width, slide_height);
-//            //tk.stop();
-//            //cout<<"time 1 is "<<tk.getTimeMilli()<<endl;
-//#else
-//            //tk.reset();tk.start();
-//            float det_score = get_score( feature_chns, x, y, slide_width, slide_height);
-//            //tk.stop();
-//            //cout<<"time 2 is "<<tk.getTimeMilli()<<endl;
-//            //int a;
-//            //cin>>a;
-//#endif
-//            if( det_score > threshold)
-//            {
-//                results.push_back( Rect( x*m_fhog_binsize, y*m_fhog_binsize, m_padded_size.width, m_padded_size.height) );
-//                confidence.push_back( det_score );
-//            }
-//        }
-//    }
     /*  store the detect confidence */
-
     if( m_filters.size() != feature_chns.size())
     {
         cout<<"number of channels should equal the number of filters "<<endl;
@@ -266,6 +168,7 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
 {
     if( !checkParameter())
         return false;
+
     /*  compute the scales we will work on  */
     vector<double> scale_vec;
     get_scale_vector( input_image.size(),  minSize ,maxSize, scale_factor, scale_vec);
@@ -289,6 +192,7 @@ bool scanner::detectMultiScale( const Mat &input_image,      //in : input image
         {
             if( det_confs[c] < threshold)
                 continue;
+
             Rect tmp_target = det_results[c];
             tmp_target.x /= scale_vec[scale_index];
             tmp_target.y /= scale_vec[scale_index];
@@ -505,8 +409,11 @@ bool scanner::loadModel( const string &path_to_load)        // in : path
 
 bool scanner::load_weight_to_filters()
 {
-    if(m_weight_vector.empty())
+    if(m_weight_vector.empty() || m_weight_vector.type()!=CV_32F)
+	{
+		cout<<"m_weight_vector is empty or type is not CV_32F"<<endl;
         return false;
+	}
 
     // 4 texture, m_fhog_orientation insensitiev channel, 2*m_fhog_orientation sensitive channel
     int number_of_channels = m_fhog_orientation*3+4; 
@@ -538,4 +445,44 @@ bool scanner::load_weight_to_filters()
         m_filters.push_back( filter);
     }
     return true;
+}
+
+bool scanner::form_filter_bank(
+								const double relative_ratio_to_max 	/*  in : if a filter's singular value less than relative_ratio_to_max*max_singular_value
+																					 it will be discarded, DO NOT set this too large*/
+								)
+{
+	if( m_filters.empty() || m_filters[0].type()!=CV_32F)
+	{
+		cout<<"Error, m_filters is empty() or wrong type, run load_weight_to_filters() function first..."<<endl;
+		return false;
+	}
+
+	/* decompose the m_filters, and save the row filter and col filter */
+	for (unsigned int i=0 ;i<m_filters.size() ;i++ ) 
+	{
+		/*  save the SVD results, w is a column vector, stores the singular values*/
+		Mat w,u,vt;
+		SVD::compute( m_filters[i], w, u, vt);
+
+		/*  find the max singular value */
+		double min_w, max_w;
+		cv::Point min_p,max_p;
+		minMaxLoc( w, &min_w, &max_w, &min_p, &max_p );
+		cout<<"min_w is "<<min_w<<", max_w is "<<max_w<<" min_p is "<<min_p<<", max_p is "<<max_p<<endl;
+
+		double threshold = std::max(1e-4, relative_ratio_to_max*max_w);
+		for ( unsigned int j=0;j<w.rows;j++)
+		{
+			/*  adding those important filter */
+			if( w.at<float>(j,0) > threshold)
+			{
+				Mat row_filer, col_filter;
+				u.col(j).copyTo(col_filter);
+				vt.row(j).copyTo(row_filer);
+				m_row_filters[i].push_back( row_filer*std::sqrt( w.at<float>(j,0)));
+				m_col_filters[i].push_back( col_filter*std::sqrt( w.at<float>(j,0)));
+			}
+		}
+	}
 }

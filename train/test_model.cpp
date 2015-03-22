@@ -41,6 +41,7 @@ int main( int argc , char ** argv)
 								0.083819505802211,
 								0.011343736558495);
 	Mat w,u,vt;
+
 	SVD::compute(g, w, u , vt);
 	cout<<"g's type is "<<g.type()<<endl;
 	cout<<"w's type is "<<w.type()<<endl;

@@ -17,7 +17,9 @@ using namespace std;
 
 scanner::scanner()
 {
-
+    m_fhog_orientation = 9;
+    m_fhog_binsize = 8;
+    m_number_of_seperable_filters = 0;
 }
 
 scanner::~scanner()
@@ -131,12 +133,25 @@ bool scanner::slide_image( const Mat &input_img,		// in: input image
 
     Mat saliency_map = Mat::zeros( feature_chns[0].size(), CV_32F);
     Mat tmp_saliency;
+
+    /*  1 original convolution */
     for(unsigned int c=0;c<m_filters.size();c++)
     {
         cv::filter2D( feature_chns[c], tmp_saliency, CV_32F, m_filters[c] );
         saliency_map = saliency_map + tmp_saliency;
     }
-    
+
+    /*  2 seperable convolution */
+    //for(unsigned int i=0;i<m_row_filters.size();i++)
+    //{
+    //    for(unsigned int j=0;j<m_row_filters[i].size();j++)
+    //    {
+    //        cv::filter2D( feature_chns[i], tmp_saliency, CV_32F, m_col_filters[i][j]);
+    //        cv::filter2D( tmp_saliency, tmp_saliency, CV_32F, m_row_filters[i][j]);
+    //        saliency_map = saliency_map + tmp_saliency;
+    //    }
+    //}
+
     /*  add the bias term */
     saliency_map = saliency_map + m_weight_vector.at<float>(m_feature_dim,0);
     for(unsigned int r=0;r<saliency_map.rows;r++)
@@ -404,6 +419,13 @@ bool scanner::loadModel( const string &path_to_load)        // in : path
         return false;
     }
 
+    /* form the filter bank */
+    //if(!form_filter_bank())
+    //{
+    //    cout<<"Forming the filter bank failed "<<endl;
+    //    return false;
+    //}
+
     return true;
 }
 
@@ -458,6 +480,10 @@ bool scanner::form_filter_bank(
 		return false;
 	}
 
+    /* prepare for the row and col filters */
+    m_row_filters.resize( m_filters.size() );
+    m_col_filters.resize( m_filters.size() );
+
 	/* decompose the m_filters, and save the row filter and col filter */
 	for (unsigned int i=0 ;i<m_filters.size() ;i++ ) 
 	{
@@ -469,9 +495,8 @@ bool scanner::form_filter_bank(
 		double min_w, max_w;
 		cv::Point min_p,max_p;
 		minMaxLoc( w, &min_w, &max_w, &min_p, &max_p );
-		cout<<"min_w is "<<min_w<<", max_w is "<<max_w<<" min_p is "<<min_p<<", max_p is "<<max_p<<endl;
-
 		double threshold = std::max(1e-4, relative_ratio_to_max*max_w);
+
 		for ( unsigned int j=0;j<w.rows;j++)
 		{
 			/*  adding those important filter */
@@ -482,7 +507,9 @@ bool scanner::form_filter_bank(
 				vt.row(j).copyTo(row_filer);
 				m_row_filters[i].push_back( row_filer*std::sqrt( w.at<float>(j,0)));
 				m_col_filters[i].push_back( col_filter*std::sqrt( w.at<float>(j,0)));
+                m_number_of_seperable_filters++;
 			}
 		}
 	}
+    return true;
 }

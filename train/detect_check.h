@@ -216,7 +216,7 @@ class detect_check
         long num_above_120 = 0;
 
         bf::directory_iterator end_it;
-        for( bf::directory_iterator file_iter( m_pos_img_path ); file_iter!=end_it; file_iter++)
+        for( bf::directory_iterator file_iter( pos_fn ); file_iter!=end_it; file_iter++)
 	    {
             string pathname = file_iter->path().string();
             string basename = bf::basename( *file_iter);
@@ -227,6 +227,7 @@ class detect_check
             Mat img = imread( pathname );
             if(img.empty())
                 continue;
+
             int face_size = img.rows;
             if( face_size <= 40)
                 num_under_40++;
@@ -304,6 +305,7 @@ class detect_check
             Mat test_img = imread( pos_image_path_vector[i]);
             vector<Rect> det_rects;
             vector<double> det_confs;
+
             detector.detectMultiScale( test_img, det_rects, det_confs, m_minSize, m_maxSize, m_scale_factor, m_stride, m_threshold);
 
             /* debug show */
@@ -339,7 +341,7 @@ class detect_check
             {
                 for(int c=0;c<isMatched_r.size();c++)
                 {
-                    if( !isMatched_r[c])
+                    if( !isMatched_r[c] && in_the_range(target_rects[c]) )
                     {
                         number_of_fn++;
                         if(m_save_images)
@@ -417,6 +419,24 @@ class detect_check
             return false;
         }
         return true;
+    }
+
+
+    /* 
+     * ===  FUNCTION  ======================================================================
+     *         Name:  in_the_range
+     *  Description:  return true if the target is the target range
+     * =====================================================================================
+     */
+    bool in_the_range( const Rect &in_rect )
+    {
+        if( in_rect.width < m_minSize.width ||
+            in_rect.height < m_minSize.height ||
+            in_rect.width > m_maxSize.width ||
+            in_rect.height > m_maxSize.height)
+            return false;
+        else
+            return true;
     }
 
     /*  data section */

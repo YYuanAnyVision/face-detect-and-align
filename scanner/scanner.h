@@ -159,6 +159,6 @@ class scanner
         std::vector<cv::Mat> m_filters;
 		std::vector<std::vector<cv::Mat> > m_row_filters; /* m_row_filters.size() == m_filters.size(), m_row_filters[i] contains r seperable filter*/
 		std::vector<std::vector<cv::Mat> > m_col_filters; /* which is produced by m_filters[i], see SVD and seperable convolution */
-
+        int m_number_of_seperable_filters;    
 };
 #endif

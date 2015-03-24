@@ -53,8 +53,8 @@ int main(int argc, char** argv)
 
         /*  paras for training */
         int number_of_thread = 1;
-        double svm_c = 10;
-        double epsilon = 0.01*svm_c;
+        double svm_c = 20;
+        double epsilon = 0.05;
 
         // In this example we are going to train a face detector based on the
         // small faces dataset in the examples/faces directory.  So the first
@@ -141,9 +141,16 @@ int main(int argc, char** argv)
         // fashion.   
         typedef scan_fhog_pyramid<pyramid_down<6>, warp_fhog_extractor> image_scanner_type; 
         image_scanner_type Scanner;
+
+        /*  set the nuclear norm */
+        Scanner.set_nuclear_norm_regularization_strength(1);
+
         // The sliding window detector will be 80 pixels wide and 80 pixels tall.
         Scanner.set_detection_window_size( target_size.width, target_size.height); 
         structural_object_detection_trainer<image_scanner_type> trainer(Scanner);
+
+
+
         // Set this to the number of processing cores on your machine.
         trainer.set_num_threads(number_of_thread);  
         // The trainer is a kind of support vector machine and therefore has the usual SVM
@@ -300,7 +307,7 @@ int main(int argc, char** argv)
         cout << "num filters: "<< num_separable_filters(detector) << endl;
         // You can also control how many filters there are by explicitly thresholding the
         // singular values of the filters like this:
-        detector = threshold_filter_singular_values(detector,0.1);
+        detector = threshold_filter_singular_values(detector,0.15);
         // That removes filter components with singular values less than 0.1.  The bigger
         // this number the fewer separable filters you will have and the faster the
         // detector will run.  However, a large enough threshold will hurt detection

@@ -291,7 +291,7 @@ class detect_check
         int number_of_fn = 0;
         int number_of_wrong = 0;
         
-        //#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fn) reduction( +: number_of_wrong ) reduction(+:number_of_target)
+        #pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fn) reduction( +: number_of_wrong ) reduction(+:number_of_target)
         for( int i=0;i<pos_image_path_vector.size(); i++)
         { 
             // reading groundtruth...
@@ -309,13 +309,13 @@ class detect_check
             detector.detectMultiScale( test_img, det_rects, det_confs, m_minSize, m_maxSize, m_scale_factor, m_stride, m_threshold);
 
             /* debug show */
-            for ( int c=0;c<det_rects.size() ; c++) {
-                rectangle( test_img, det_rects[c], Scalar(0,0,255), 3);
-                cout<<"conf is "<<det_confs[c]<<endl;
-            }
-            cout<<endl;
-            imshow("test", test_img);
-            waitKey(0);
+            //for ( int c=0;c<det_rects.size() ; c++) {
+            //    rectangle( test_img, det_rects[c], Scalar(0,0,255), 3);
+            //    cout<<"conf is "<<det_confs[c]<<endl;
+            //}
+            //cout<<endl;
+            //imshow("test", test_img);
+            //waitKey(0);
 
             int matched = 0;
             vector<bool> isMatched_r( target_rects.size(), false);

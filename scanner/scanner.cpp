@@ -134,17 +134,17 @@ bool scanner::slide_image( const Mat &input_img,		// in: input image
     Mat saliency_map = Mat::zeros( feature_chns[0].size(), CV_32F);
     Mat tmp_saliency;
 
-    TickMeter tt;tt.start();
-    /*  1 original convolution */
-    for(unsigned int c=0;c<m_filters.size();c++)
-    {
-        cv::filter2D( feature_chns[c], tmp_saliency, CV_32F, m_filters[c] );
-        saliency_map = saliency_map + tmp_saliency;
-    }
-    tt.stop();cout<<"time 1 "<<tt.getTimeMilli()<<endl;tt.reset();
+    //TickMeter tt;tt.start();
+    ///*  1 original convolution */
+    //for(unsigned int c=0;c<m_filters.size();c++)
+    //{
+    //    cv::filter2D( feature_chns[c], tmp_saliency, CV_32F, m_filters[c] );
+    //    saliency_map = saliency_map + tmp_saliency;
+    //}
+    //tt.stop();cout<<"time 1 "<<tt.getTimeMilli()<<endl;tt.reset();
 
 
-    tt.start();
+    //tt.start();
     /*  2 seperable convolution */
     for(unsigned int i=0;i<m_row_filters.size();i++)
     {
@@ -155,7 +155,7 @@ bool scanner::slide_image( const Mat &input_img,		// in: input image
             saliency_map = saliency_map + tmp_saliency;
         }
     }
-    tt.stop();cout<<"time 2 "<<tt.getTimeMilli()<<endl;tt.reset();
+    //tt.stop();cout<<"time 2 "<<tt.getTimeMilli()<<endl;tt.reset();
 
     /*  add the bias term */
     saliency_map = saliency_map + m_weight_vector.at<float>(m_feature_dim,0);

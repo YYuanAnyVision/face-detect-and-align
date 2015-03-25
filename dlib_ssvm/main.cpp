@@ -52,8 +52,8 @@ int main(int argc, char** argv)
         
 
         /*  paras for training */
-        int number_of_thread = 1;
-        double svm_c = 20;
+        int number_of_thread = 8;
+        double svm_c = 300;
         double epsilon = 0.05;
 
         // In this example we are going to train a face detector based on the
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
         // into images_train.  So this next step doubles the size of our
         // training dataset.  Again, this is obviously optional but is useful in
         // many object detection tasks.
-        add_image_left_right_flips(images_train, face_boxes_train);
+        //add_image_left_right_flips(images_train, face_boxes_train);
         cout << "num training images: " << images_train.size() << endl;
         //cout << "num testing images:  " << images_test.size() << endl;
 
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
         image_scanner_type Scanner;
 
         /*  set the nuclear norm */
-        Scanner.set_nuclear_norm_regularization_strength(1);
+        Scanner.set_nuclear_norm_regularization_strength(5);
 
         // The sliding window detector will be 80 pixels wide and 80 pixels tall.
         Scanner.set_detection_window_size( target_size.width, target_size.height); 

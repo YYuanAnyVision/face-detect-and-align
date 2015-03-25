@@ -31,8 +31,8 @@ namespace bl = boost::lambda;
 int main( int argc , char ** argv)
 {
     string model_path = argv[1];
-    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/imgs/";
-    string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/gts/";
+    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/imgs/";
+    string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/gts/";
     double detect_threshold = -0.8;
 
     TickMeter tk;
@@ -47,12 +47,26 @@ int main( int argc , char ** argv)
     /*  show the detector */
     fhog_sc.visualizeDetector();
 
+
+    /* test once */
+    Mat input_image = imread( argv[2]);
+    vector<Rect> dets;
+    vector<double> confs;
+    fhog_sc.detectMultiScale( input_image, dets, confs, Size(30,30),Size(500,500), 1.2,1, -0.2 );
+    cout<<"det "<<dets.size()<<endl;
+    
+    for ( unsigned int c=0;c<dets.size() ;c++ ) {
+        rectangle( input_image, dets[c], Scalar(255,0,128), 2);
+    }
+    imshow("show", input_image);
+    waitKey(0);
+
     /*  use check_detector to evaluate the performance */
     double _hit = 0;
     double _FPPI =0;
     detect_check<scanner> dc;
     dc.set_path( test_img_folder, test_img_gt, "", true);
-    dc.set_parameter( Size(80,80), Size(300,300), 1.2, 1, -1);
+    dc.set_parameter( Size(30,30), Size(400,400), 1.2, 1, -1);
 
     vector<double> hits;
     vector<double> fppis;

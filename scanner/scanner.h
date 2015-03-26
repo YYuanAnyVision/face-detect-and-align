@@ -8,6 +8,7 @@
 using namespace std;
 using namespace cv;
 
+
 class scanner
 {
     public:
@@ -38,11 +39,11 @@ class scanner
          *  Description:  set parameters
          * =====================================================================================
          */
-        bool setParameters( const int &fhog_binsize,        //in : fhog's binsize       
-                            const int &fhog_orientation,    //in : fhog's number of orientation
-                            const Size &target_size,        //in : target's size
-                            const Size &padded_size,        //in : target's padded size( used to scan the image)
-                            const Mat &weight_vector);      //in : svm's weight vector
+        bool setParameters( const int &fhog_binsize,                //in : fhog's binsize       
+                            const int &fhog_orientation,            //in : fhog's number of orientation
+                            const Size &target_size,                //in : target's size
+                            const Size &padded_size,                //in : target's padded size( used to scan the image)
+                            const vector<Mat> &weight_vector);      //in : svm's weight vector
 
         /* 
          * ===  FUNCTION  ======================================================================
@@ -93,6 +94,15 @@ class scanner
          * =====================================================================================
          */
         bool visualizeDetector();
+
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  loadModels
+         *  Description:  load model files, they should have the same size of filter
+         * =====================================================================================
+         */
+        bool loadModels( const vector<string> &model_files);    // in : paths of the model files
      
     private:
         /* 
@@ -133,6 +143,40 @@ class scanner
 																					 it will be discarded, DO NOT set this too large*/
 								);
 
+        
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  get_saliency_map
+         *  Description:  Run one template on giving feature, return the saliency map
+         * =====================================================================================
+         */
+        void get_saliency_map( const vector<Mat> &features_vec,         // in : input feature
+                               const int template_index,                // in : index of the template
+                               Mat &saliency_map);                      // out: output saliency map( detect confidence)
+
+        
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  threshold_detection
+         *  Description:  return the detect results above the threshold value
+         * =====================================================================================
+         */
+        void threshold_detection( const vector<Mat> &saliency_maps,     // in : saliency_maps
+                                  vector<Rect> &det_results,            // out: detect results            
+                                  vector<double> &det_confs,           // out : detect confidence
+                                  const double threshold);              // in : threshold
+
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  adjust_detection
+         *  Description:  adjust the detected Rect, scale back , crop the out-of-image part
+         * =====================================================================================
+         */
+        void adjust_detection( Rect &det_result,        // in&out 
+                               double scale,            // in : scale factor
+                               const Mat &input_image); // in : input_image , used for border check
+
         /*  Feature Part : fhog */
         int m_fhog_binsize;
         int m_fhog_orientation;
@@ -142,8 +186,7 @@ class scanner
         Size m_padded_size;
 
         /*  SVM's weight vector */
-        Mat m_weight_vector;
-        float *m_weight;        //pointer to the data of m_weight_vector
+        vector<Mat> m_weight_vector;    // may contain several templates, one for frontal ,one for profile etc..
         int m_feature_dim;
 
         /*  Feature generator */
@@ -156,9 +199,13 @@ class scanner
 		 *  but if it's seperable, we'd like to use row_filter
 		 *  and col_filter to reduce the computation, formed by
 		 *  form_filter_bank() function */
-        std::vector<cv::Mat> m_filters;
-		std::vector<std::vector<cv::Mat> > m_row_filters; /* m_row_filters.size() == m_filters.size(), m_row_filters[i] contains r seperable filter*/
-		std::vector<std::vector<cv::Mat> > m_col_filters; /* which is produced by m_filters[i], see SVD and seperable convolution */
-        int m_number_of_seperable_filters;    
+
+        /*  firsr index is for number of template
+         *  second index is for number of feature channel
+         *  third index is for separable filter inside on feature channel*/
+        vector<vector<Mat> > m_filters;
+		vector<vector<vector<Mat> > > m_row_filters; 
+		vector<vector<vector<Mat> > >m_col_filters;
+
 };
 #endif

@@ -143,7 +143,7 @@ int main(int argc, char** argv)
         image_scanner_type Scanner;
 
         /*  set the nuclear norm */
-        Scanner.set_nuclear_norm_regularization_strength(5);
+        Scanner.set_nuclear_norm_regularization_strength(7);
 
         // The sliding window detector will be 80 pixels wide and 80 pixels tall.
         Scanner.set_detection_window_size( target_size.width, target_size.height); 
@@ -242,7 +242,9 @@ int main(int argc, char** argv)
 
         /*  save the learning weight vector to opencv format */
         scanner fhog_scanner;
-        fhog_scanner.setParameters( fhog_binsize, fhog_oritent, target_size, padded_size, weight_mat);
+        std::vector<Mat> weight_vs;
+        weight_vs.push_back( weight_mat);
+        fhog_scanner.setParameters( fhog_binsize, fhog_oritent, target_size, padded_size, weight_vs);
         fhog_scanner.saveModel( "dlib_svm_model.xml","dlib_version");
         // Now let's talk about some optional features of this training tool as well as some
         // important points you should understand.
@@ -324,7 +326,9 @@ int main(int argc, char** argv)
 
         weight_mat.at<float>(w_dim,0) *= -1.0;
 
-        fhog_scanner.setParameters( fhog_binsize, fhog_oritent, target_size, padded_size, weight_mat);
+        std::vector<Mat> weight_vs2;
+        weight_vs2.push_back( weight_mat);
+        fhog_scanner.setParameters( fhog_binsize, fhog_oritent, target_size, padded_size, weight_vs2);
         fhog_scanner.saveModel( "dlib_svm_model_nu.xml","dlib_version");
         
     }

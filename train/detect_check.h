@@ -371,6 +371,10 @@ class detect_check
             }
         }
 
+        cout<<"number of target is "<<number_of_target<<endl;
+        cout<<"number of FN is "<<number_of_fn<<endl;
+        cout<<"number of FP is "<<number_of_wrong<<endl;
+
         hit  = 1.0*(number_of_target - number_of_fn)/number_of_target;
         FPPI = 1.0*(number_of_wrong)/pos_image_path_vector.size();
         tk.stop();
@@ -394,7 +398,7 @@ class detect_check
     	
     	double union_area = r1.width*r1.height + r2.width*r2.height - intersect.width*intersect.height;
     
-    	if( intersect.width*intersect.height/union_area < 0.5 )
+    	if( intersect.width*intersect.height/union_area < 0.35 )
     		return false;
     
     	return true;

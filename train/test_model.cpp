@@ -31,14 +31,21 @@ namespace bl = boost::lambda;
 int main( int argc , char ** argv)
 {
     string model_path = argv[1];
-    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/imgs/";
-    string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/gts/";
+    string model_path2 = argv[2];
+    vector<string> m_paths;
+    m_paths.push_back( model_path);
+    m_paths.push_back( model_path2);
+
+    //string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/imgs/";
+    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/imgs/";
+    //string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/gts/";
+    string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/gts/";
     double detect_threshold = -0.8;
 
     TickMeter tk;
 
     scanner fhog_sc;
-    if( !fhog_sc.loadModel( model_path ) )
+    if( !fhog_sc.loadModels( m_paths ) )
     {
         cout<<"Can not load the model file "<<endl;
         return -1;
@@ -49,10 +56,10 @@ int main( int argc , char ** argv)
 
 
     /* test once */
-    Mat input_image = imread( argv[2]);
+    Mat input_image = imread( argv[3]);
     vector<Rect> dets;
     vector<double> confs;
-    fhog_sc.detectMultiScale( input_image, dets, confs, Size(30,30),Size(500,500), 1.2,1, -0.2 );
+    fhog_sc.detectMultiScale( input_image, dets, confs, Size(80,80),Size(500,500), 1.2,1, -0.2 );
     cout<<"det "<<dets.size()<<endl;
     
     for ( unsigned int c=0;c<dets.size() ;c++ ) {
@@ -66,11 +73,11 @@ int main( int argc , char ** argv)
     double _FPPI =0;
     detect_check<scanner> dc;
     dc.set_path( test_img_folder, test_img_gt, "", true);
-    dc.set_parameter( Size(30,30), Size(400,400), 1.2, 1, -1);
+    dc.set_parameter( Size(80,80), Size(400,400), 1.2, 1, 0);
 
     vector<double> hits;
     vector<double> fppis;
-    dc.generate_roc( fhog_sc, fppis, hits, 1, -1.5);
+    //dc.generate_roc( fhog_sc, fppis, hits, 1, -1.5);
     dc.test_detector( fhog_sc, _hit, _FPPI);
     dc.get_stat_on_missed();
     cout<<"Results : \nHit : "<<_hit<<endl<<"FPPI : "<<_FPPI<<endl;

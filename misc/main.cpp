@@ -15,6 +15,16 @@ namespace bf = boost::filesystem;
 
 int main( int argc, char** argv)
 {
+
+    FileStorage fs("testMat.xml", FileStorage::WRITE);
+    vector<Mat> mats;
+    Mat a = Mat::zeros(4,5,CV_32F);
+    Mat b = Mat::zeros(9,1, CV_64F);
+    mats.push_back(a);
+    mats.push_back(b);
+    fs<<"mats"<<mats;
+    fs.release();
+
 	//Mat input_image  = imread("../../data/test.png");
 
 	//cout<<"input image, cols "<<input_image.cols<<" rows "<<input_image.rows<<endl;

@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 
         /*  paras for training */
         int number_of_thread = 8;
-        double svm_c = 300;
+        double svm_c = 500;
         double epsilon = 0.05;
 
         // In this example we are going to train a face detector based on the

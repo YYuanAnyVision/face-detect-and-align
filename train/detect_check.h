@@ -299,7 +299,12 @@ class detect_check
             FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
             fst["boxes"]>>target_rects;
             fst.release();
-            number_of_target += target_rects.size();
+
+            for(unsigned int c=0;c<target_rects.size();c++)
+            {
+                if( in_the_range( target_rects[c]))
+                    number_of_target++;
+            }
 
             // reading image
             Mat test_img = imread( pos_image_path_vector[i]);

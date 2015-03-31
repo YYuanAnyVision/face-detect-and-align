@@ -31,6 +31,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 
 #include "warp_fhog_extractor.h"
 #include "../scanner/scanner.h"
@@ -53,8 +54,11 @@ int main(int argc, char** argv)
 
         /*  paras for training */
         int number_of_thread = 8;
-        double svm_c = 500;
+        double svm_c = 350;
         double epsilon = 0.05;
+        int nuclear_norm = 8;
+        double threshold_singluar_value = 0.15;
+        string train_log_name = " right_face";
 
         // In this example we are going to train a face detector based on the
         // small faces dataset in the examples/faces directory.  So the first
@@ -125,7 +129,9 @@ int main(int argc, char** argv)
         // into images_train.  So this next step doubles the size of our
         // training dataset.  Again, this is obviously optional but is useful in
         // many object detection tasks.
+
         //add_image_left_right_flips(images_train, face_boxes_train);
+        flip_image_dataset_left_right( images_train, face_boxes_train);  
         cout << "num training images: " << images_train.size() << endl;
         //cout << "num testing images:  " << images_test.size() << endl;
 
@@ -143,7 +149,7 @@ int main(int argc, char** argv)
         image_scanner_type Scanner;
 
         /*  set the nuclear norm */
-        Scanner.set_nuclear_norm_regularization_strength(7);
+        Scanner.set_nuclear_norm_regularization_strength(nuclear_norm);
 
         // The sliding window detector will be 80 pixels wide and 80 pixels tall.
         Scanner.set_detection_window_size( target_size.width, target_size.height); 
@@ -309,7 +315,7 @@ int main(int argc, char** argv)
         cout << "num filters: "<< num_separable_filters(detector) << endl;
         // You can also control how many filters there are by explicitly thresholding the
         // singular values of the filters like this:
-        detector = threshold_filter_singular_values(detector,0.15);
+        detector = threshold_filter_singular_values(detector, threshold_singluar_value);
         // That removes filter components with singular values less than 0.1.  The bigger
         // this number the fewer separable filters you will have and the faster the
         // detector will run.  However, a large enough threshold will hurt detection
@@ -330,6 +336,22 @@ int main(int argc, char** argv)
         weight_vs2.push_back( weight_mat);
         fhog_scanner.setParameters( fhog_binsize, fhog_oritent, target_size, padded_size, weight_vs2);
         fhog_scanner.saveModel( "dlib_svm_model_nu.xml","dlib_version");
+
+
+        ofstream of( train_log_name.c_str(),ios::trunc);
+        of<<"fhog_binSize is \t\t"<<fhog_binsize<<endl;
+        of<<"fhog_oritent is \t\t"<<fhog_oritent<<endl;
+        of<<"target_size is \t\t"<<target_size.width<<" "<<target_size.height<<endl;
+        of<<"padded_size is \t\t"<<padded_size.width<<" "<<padded_size.height<<endl;
+        of<<"number_of_thread is \t\t"<<number_of_thread<<endl;
+        of<<"svm_c is \t\t"<<svm_c<<endl;
+        of<<"epsilon is \t\t"<<epsilon<<endl;
+        of<<"nuclear_norm is \t\t"<<nuclear_norm<<endl;
+        of<<"image_train.size is \t\t"<<images_train.size()<<endl;
+        of<<"train results(precision recall ap) is \t\t"<<test_object_detection_function(detector, images_train, face_boxes_train)<<endl;
+        of<<"number separable filters "<<num_separable_filters(detector)<<endl;
+        of<<"threshold singular value is "<<threshold_singluar_value<<endl;
+
         
     }
     catch (exception& e)

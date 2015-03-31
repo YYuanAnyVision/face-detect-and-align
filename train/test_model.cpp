@@ -4,9 +4,6 @@
 #include <sstream>
 #include <ctime>
 
-#include "opencv2/contrib/contrib.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/contrib/contrib.hpp"
 
 #include "boost/filesystem.hpp"
 #include "boost/lambda/bind.hpp"
@@ -20,7 +17,10 @@
 
 #include "detect_check.h"
 
-#define SAVE_IMAGE
+#include "opencv2/contrib/contrib.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/opencv.hpp"
 
 using namespace std;
 using namespace cv;
@@ -30,22 +30,22 @@ namespace bl = boost::lambda;
 
 int main( int argc , char ** argv)
 {
-    string model_path = argv[1];
-    string model_path2 = argv[2];
-    string model_path3 = argv[3];
-    string model_path4 = argv[4];
-    string model_path5 = argv[5];
+    string model_path(argv[1]);
+    //string model_path2 = argv[2];
+    //string model_path3 = argv[3];
+    //string model_path4 = argv[4];
+    //string model_path5 = argv[5];
     vector<string> m_paths;
     m_paths.push_back( model_path);
-    m_paths.push_back( model_path2);
-    m_paths.push_back( model_path3);
-    m_paths.push_back( model_path4);
-    m_paths.push_back( model_path5);
+    //m_paths.push_back( model_path2);
+    //m_paths.push_back( model_path3);
+    //m_paths.push_back( model_path4);
+    //m_paths.push_back( model_path5);
 
-    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/imgs/";
-    //string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/imgs/";
-    string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/gts/";
-    //string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/gts/";
+    //string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/imgs/";
+    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/imgs/";
+    //string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/gts/";
+    string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/gts/";
 
     TickMeter tk;
 
@@ -57,15 +57,59 @@ int main( int argc , char ** argv)
     }
 
     /*  show the detector */
-    fhog_sc.visualizeDetector();
+    //fhog_sc.visualizeDetector();
 
 
+    /*  1 test on a giving video */
+    //string video_name = string(argv[2]);
+    //cv::VideoCapture vc( video_name);
+    //if(!vc.isOpened())
+    //{
+    //    cout<<"Can not open the video file "<<string(argv[2])<<endl;
+    //}
+
+    //bool do_detection = false;
+    //while(true)
+    //{
+    //    Mat frame_image;
+    //    vc>>frame_image;
+    //    if(frame_image.empty())
+    //    {
+    //        cout<<"video ends "<<endl;
+    //        break;
+    //    }
+    //    //resize( frame_image, frame_image, Size(0,0), 2, 2);
+
+    //    /*  do detection */
+    //    if(do_detection)
+    //    {
+    //        vector<Rect> results;
+    //        vector<double> confs;
+    //        fhog_sc.detectMultiScale( frame_image, results, confs, Size(40,40), Size(600,600),1.2, -0.5);
+    //        for(unsigned int c=0;c<results.size();c++)
+    //            rectangle( frame_image, results[c], Scalar(255,0,255), 2);
+    //    }
+
+    //    imshow("frame", frame_image);
+    //    char c = waitKey(30);
+    //    if(c=='t')
+    //        do_detection = true;
+    //    else if(c=='s')
+    //        do_detection = false;
+
+    //}
+
+
+
+    /* 2 test on FDDB face detection database
+     * ------------------------------------------------------------------------------------
+     */
     /*  use check_detector to evaluate the performance */
     double _hit = 0;
     double _FPPI =0;
     detect_check<scanner> dc;
     dc.set_path( test_img_folder, test_img_gt, "", true);
-    dc.set_parameter( Size(80,80), Size(400,400), 1.2, 1, 0);
+    dc.set_parameter( Size(40,40), Size(400,400), 1.2, 1, 0);
 
     vector<double> hits;
     vector<double> fppis;
@@ -73,6 +117,11 @@ int main( int argc , char ** argv)
     dc.test_detector( fhog_sc, _hit, _FPPI);
     dc.get_stat_on_missed();
     cout<<"Results : \nHit : "<<_hit<<endl<<"FPPI : "<<_FPPI<<endl;
+    
+    fhog_sc.saveModel( "super_union_face.xml", "yy_2015_3_30, combined 5 tempaltes");
+    /*
+     * ------------------------------------------------------------------------------------
+     */
 
     return 0;
 }

@@ -1,0 +1,25 @@
+left_face:
+nuclear_norm = 8, svm_c = 500 --> recall = 0.405506, number_of_fp = 7
+nuclear_norm = 8, svm_c = 350 --> recall = 0.383272, number_of_fp = 5
+nuclear_norm = 8, svm_c = 250 --> recall = 0.347803, number_of_fp = 3
+
+right_face:
+nuclear_norm = 8, svm_c = 350 --> recall = 0.382742, number_of_fp = 6 (和left_face的一样配置)
+
+frontal_face:
+nuclear_norm = 9, svm_c = 300 --> recall = 0.884188, number_of_fp = 1
+nuclear_norm = 9, svm_c = 500 --> recall = 0.899787, number_of_fp = 1
+nuclear_norm = 9, svm_c = 700 --> recall = 0.90806, number_of_fp = 3
+
+nuclear_norm = 8, svm_c = 300 --> recall = 0.88537 , number_of_fp = 2
+nuclear_norm = 8, svm_c = 500 --> recall = 0.905696 , number_of_fp = 1
+nuclear_norm = 8, svm_c = 700 --> recall = 0.911841 , number_of_fp = 4
+
+
+rotated_left:
+nuclear_norm = 8, svm_c = 300 --> recall = 0.65871 , number_of_fp = 0
+nuclear_norm = 8, svm_c = 500 --> recall = 0.668873 , number_of_fp = 0
+
+
+rotated_right:
+nuclear_norm = 8, svm_c = 500 --> recall =0.676909 , number_of_fp = 0

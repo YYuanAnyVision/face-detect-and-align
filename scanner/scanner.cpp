@@ -185,8 +185,9 @@ void scanner::get_saliency_map( const vector<Mat> &feature_chns,         // in :
     {
         for(unsigned int j=0;j<m_row_filters[template_index][i].size();j++)
         {
-            cv::filter2D( feature_chns[i], tmp_saliency, CV_32F, m_col_filters[template_index][i][j]);
-            cv::filter2D( tmp_saliency, tmp_saliency, CV_32F, m_row_filters[template_index][i][j]);
+            cv::filter2D( feature_chns[i], tmp_saliency, CV_32F, m_col_filters[template_index][i][j], Point(-1,-1),0, BORDER_CONSTANT);
+            cv::filter2D( tmp_saliency, tmp_saliency, CV_32F, m_row_filters[template_index][i][j], Point(-1,-1), 0, BORDER_CONSTANT);
+
             saliency_map = saliency_map + tmp_saliency;
         }
     }

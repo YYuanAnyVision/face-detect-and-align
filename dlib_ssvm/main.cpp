@@ -54,11 +54,11 @@ int main(int argc, char** argv)
 
         /*  paras for training */
         int number_of_thread = 8;
-        double svm_c = 350;
+        double svm_c = 700;
         double epsilon = 0.05;
-        int nuclear_norm = 8;
+        int nuclear_norm = 9;
         double threshold_singluar_value = 0.15;
-        string train_log_name = " right_face";
+        string train_log_name = "rotated_face.log";
 
         // In this example we are going to train a face detector based on the
         // small faces dataset in the examples/faces directory.  So the first
@@ -95,6 +95,8 @@ int main(int argc, char** argv)
         dlib::array<array2d<unsigned char> > images_train, images_test;
         std::vector<std::vector<dlib::rectangle> > face_boxes_train, face_boxes_test;
 
+	
+
         // Now we load the data.  These XML files list the images in each
         // dataset and also contain the positions of the face boxes.  Obviously
         // you can use any kind of input format you like so long as you store
@@ -105,8 +107,14 @@ int main(int argc, char** argv)
         // folder.  It is a simple graphical tool for labeling objects in images
         // with boxes.  To see how to use it read the tools/imglab/README.txt
         // file.
-        load_image_dataset(images_train, face_boxes_train, faces_directory+"/training.xml");
-        //load_image_dataset(images_test, face_boxes_test, faces_directory+"/testing.xml");
+        load_image_dataset(images_train, face_boxes_train, faces_directory);
+        //load_image_dataset(images_test, face_boxes_test, faces_directory);
+		
+		
+		/* resize the image array if the memory is limited */
+
+		images_train.resize(1700);
+		face_boxes_train.resize(1700);
 
         // Now we do a little bit of pre-processing.  This is optional but for
         // this training data it improves the results.  The first thing we do is
@@ -120,7 +128,8 @@ int main(int argc, char** argv)
         /* cost  memory when training on a large database, but large image is also good for performance
          *   tradeoff , more data or bigger image ... ????
          * */
-        upsample_image_dataset<pyramid_down<2> >(images_train, face_boxes_train);
+
+		upsample_image_dataset<pyramid_down<2> >(images_train, face_boxes_train);
         //upsample_image_dataset<pyramid_down<2> >(images_test,  face_boxes_test);
 
 
@@ -130,11 +139,13 @@ int main(int argc, char** argv)
         // training dataset.  Again, this is obviously optional but is useful in
         // many object detection tasks.
 
-        //add_image_left_right_flips(images_train, face_boxes_train);
-        flip_image_dataset_left_right( images_train, face_boxes_train);  
-        cout << "num training images: " << images_train.size() << endl;
-        //cout << "num testing images:  " << images_test.size() << endl;
+        add_image_left_right_flips(images_train, face_boxes_train);
+        //flip_image_dataset_left_right( images_train, face_boxes_train);  
+		
+		/*  rotate the face image ? */
+		rotate_image_dataset( -0.47, images_train, face_boxes_train);
 
+		cout << "num training images: " << images_train.size() << endl;
 
 
         // Finally we get to the training code.  dlib contains a number of
@@ -155,7 +166,12 @@ int main(int argc, char** argv)
         Scanner.set_detection_window_size( target_size.width, target_size.height); 
         structural_object_detection_trainer<image_scanner_type> trainer(Scanner);
 
+		
+		/*  for left_face , increase the loss_per_target to 2 */
+		trainer.set_loss_per_missed_target(1);
 
+		/*  set this value small if the momory is limited */
+		//trainer.set_max_cache_size(3);
 
         // Set this to the number of processing cores on your machine.
         trainer.set_num_threads(number_of_thread);  

@@ -20,6 +20,8 @@ scanner::scanner()
 {
     m_fhog_orientation = 9;
     m_fhog_binsize = 8;
+    m_pad_feature = true;
+    m_border_size = 5;
 }
 
 scanner::~scanner()
@@ -71,8 +73,40 @@ bool scanner::visualizeDetector()
         stringstream ss;ss<<template_index;string index_s;ss>>index_s;
         imshow("detector"+index_s, draw);
     }
-    waitKey(0);
+    waitKey(1000);
     return true;
+}
+
+
+
+bool scanner::pad_features( vector<Mat> &feature_chns)  // in&out: feature channels
+{
+    if(!m_pad_feature || m_border_size <=0 )
+    {
+        cout<<"Do not pad the feature since the flag is not set"<<endl;
+        return false;
+    }
+    if( feature_chns.empty())
+    {
+        cout<<"feature channel is empty "<<endl;
+        return false;
+    }
+    
+    /* pad border */
+    for ( unsigned int c=0;c<feature_chns.size();c++ ) 
+    {
+        Mat padded_fea = Mat( feature_chns[c].rows + 2*m_border_size,
+                              feature_chns[c].cols + 2*m_border_size,
+                              feature_chns[c].type());
+        copyMakeBorder( feature_chns[c], padded_fea, m_border_size, m_border_size, m_border_size,m_border_size,BORDER_CONSTANT,Scalar(0,0,0));
+        feature_chns[c] = padded_fea;
+    }
+    return true;
+}
+
+void scanner::setPad( bool pad_or_not)
+{
+    m_pad_feature = pad_or_not;
 }
 
 bool scanner::slide_image( const Mat &input_img,		// in: input image
@@ -84,11 +118,17 @@ bool scanner::slide_image( const Mat &input_img,		// in: input image
     /*  Compute the fhog feature  */
     vector<Mat> feature_chns;
     Mat computed_feature;
+
     m_feature_geneartor.fhog( input_img, computed_feature, feature_chns, 0, m_fhog_binsize, m_fhog_orientation, 0.2); // 0 -> fhog, 0.2 -> clip value
     
     /* remove the all zero channel */
     feature_chns.resize( feature_chns.size()-1);
 
+
+    /* pad the feature if need */
+    if(m_pad_feature)
+        pad_features( feature_chns);
+    
     /*  compute useful constant  中国好注释*/
     /*      
      | ------ feature_width ------- |
@@ -159,9 +199,10 @@ bool scanner::slide_image( const Mat &input_img,		// in: input image
     /*  2 separable convolution , typically , when the number of seperable filter is less
      *  than 100, we should use separable convolution instead */
     //tt.start();
+    Mat buffer_matrix;
     for(unsigned int template_index=0;template_index<m_row_filters.size();template_index++)
     {
-        get_saliency_map( feature_chns, template_index, saliency_map[template_index] );
+        get_saliency_map( feature_chns, template_index,buffer_matrix,saliency_map[template_index]);
     }
     //tt.stop();cout<<"time 2 "<<tt.getTimeMilli()<<endl;tt.reset();
 
@@ -178,17 +219,17 @@ bool scanner::slide_image( const Mat &input_img,		// in: input image
 
 void scanner::get_saliency_map( const vector<Mat> &feature_chns,         // in : input feature
                                 const int template_index,               // in : index of the template
-                               Mat &saliency_map)                       // out: output saliency map( detect confidence)
+                                Mat &buffer_matrix,                     // in : buffer_matrix, share between filters, avoiding reallocate
+                                Mat &saliency_map)                      // out: output saliency map( detect confidence)
 {
-    Mat tmp_saliency;
     for(unsigned int i=0;i<m_row_filters[template_index].size();i++)
     {
         for(unsigned int j=0;j<m_row_filters[template_index][i].size();j++)
         {
-            cv::filter2D( feature_chns[i], tmp_saliency, CV_32F, m_col_filters[template_index][i][j], Point(-1,-1),0, BORDER_CONSTANT);
-            cv::filter2D( tmp_saliency, tmp_saliency, CV_32F, m_row_filters[template_index][i][j], Point(-1,-1), 0, BORDER_CONSTANT);
+            cv::filter2D( feature_chns[i], buffer_matrix, CV_32F, m_col_filters[template_index][i][j]);
+            cv::filter2D( buffer_matrix, buffer_matrix, CV_32F, m_row_filters[template_index][i][j]);
 
-            saliency_map = saliency_map + tmp_saliency;
+            saliency_map = saliency_map + buffer_matrix;
         }
     }
 }
@@ -211,11 +252,18 @@ void scanner::threshold_detection( const vector<Mat> &saliency_map,      // in :
             {
                 if(saliency_map[template_index].at<float>(r,c) > threshold)
                 {
-                    det_results.push_back(cv::Rect( (c-slide_width/2)*m_fhog_binsize, 
-                                                (r-slide_height/2)*m_fhog_binsize, 
+                    unsigned int pos_c = c;
+                    unsigned int pos_r = r;
+                    if(m_pad_feature)
+                    {
+                        pos_c -= m_border_size;
+                        pos_r -= m_border_size;
+                    }
+                    det_results.push_back(cv::Rect( (pos_c-slide_width/2)*m_fhog_binsize, 
+                                                (pos_r-slide_height/2)*m_fhog_binsize, 
                                                 m_padded_size.width, 
                                                 m_padded_size.height));
-                    det_confs.push_back(saliency_map[template_index].at<float>(r,c));
+                    det_confs.push_back(saliency_map[template_index].at<float>(r,c));   //even padded, we should use the corresponding confidence
                 }
             }
         }
@@ -386,6 +434,7 @@ bool scanner::checkParameter() const
         cout<<"Check the target_size and padded_size "<<endl;
         return false;
     }
+
 
     for(unsigned int c=0;c<m_weight_vector.size();c++)
     {

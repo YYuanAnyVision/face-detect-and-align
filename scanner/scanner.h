@@ -29,7 +29,7 @@ class scanner
                                const Size &maxSize,         //in : max target size
                                double scale_factor,         //in : factor to scale the image
                                int stride_factor=1,         //in : step factor, actual step size will be stride_factor*m_fhog_binsize
-                               double threshold =1);         //in : detection threshold
+                               double threshold =0);         //in : detection threshold
 
 
 
@@ -103,6 +103,15 @@ class scanner
          * =====================================================================================
          */
         bool loadModels( const vector<string> &model_files);    // in : paths of the model files
+        
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  setPad
+         *  Description:  whether to pad the image or not
+         * =====================================================================================
+         */
+        void setPad( bool pad_or_not );         // in : pad the image or not
      
     private:
         /* 
@@ -152,6 +161,7 @@ class scanner
          */
         void get_saliency_map( const vector<Mat> &features_vec,         // in : input feature
                                const int template_index,                // in : index of the template
+                               Mat &buffer_matirx,                      // in : buffer matrix shared between filters
                                Mat &saliency_map);                      // out: output saliency map( detect confidence)
 
         
@@ -176,6 +186,15 @@ class scanner
         void adjust_detection( Rect &det_result,        // in&out 
                                double scale,            // in : scale factor
                                const Mat &input_image); // in : input_image , used for border check
+
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  pad_features
+         *  Description:  pad the channel features with a fixed size( pad_size == 3 )
+         * =====================================================================================
+         */
+        bool pad_features( vector<Mat> &feature_chns); // in&out: feature channels
 
         /*  Feature Part : fhog */
         int m_fhog_binsize;
@@ -206,6 +225,9 @@ class scanner
         vector<vector<Mat> > m_filters;
 		vector<vector<vector<Mat> > > m_row_filters; 
 		vector<vector<vector<Mat> > >m_col_filters;
-
+        
+        /* pad the feature map, so we can detect those targets near the border */
+        bool m_pad_feature;
+        int  m_border_size;
 };
 #endif

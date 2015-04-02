@@ -60,58 +60,58 @@ int main( int argc , char ** argv)
     fhog_sc.visualizeDetector();
 
 
-    //Mat frame_image = imread( argv[2] );
-    //vector<Rect> results;
-    //vector<double> confs;
-    //fhog_sc.detectMultiScale( frame_image, results, confs, Size(60,60), Size(600,600),1.2, 1, -0.3);
-    //for(unsigned int c=0;c<results.size();c++)
-    //    rectangle( frame_image, results[c], Scalar(255,0,255), 2);
-    //imshow("result",frame_image);
-    //waitKey(0);
+    Mat frame_image = imread( argv[2] );
+    vector<Rect> results;
+    vector<double> confs;
+    fhog_sc.detectMultiScale( frame_image, results, confs, Size(80,80), Size(1000,1000),1.2, 1, -1);
+    for(unsigned int c=0;c<results.size();c++)
+        rectangle( frame_image, results[c], Scalar(255,0,255), 2);
+    imshow("result",frame_image);
+    waitKey(0);
 
 
 
     /*  1 test on a giving video */
-    string video_name = string(argv[2]);
-    cv::VideoCapture vc( video_name);
-    if(!vc.isOpened())
-    {
-        cout<<"Can not open the video file "<<string(argv[2])<<endl;
-    }
+    //string video_name = string(argv[2]);
+    //cv::VideoCapture vc( video_name);
+    //if(!vc.isOpened())
+    //{
+    //    cout<<"Can not open the video file "<<string(argv[2])<<endl;
+    //}
 
-    bool do_detection = false;
-    while(true)
-    {
-        Mat frame_image;
-        vc>>frame_image;
-        if(frame_image.empty())
-        {
-            cout<<"video ends "<<endl;
-            break;
-        }
-        //resize( frame_image, frame_image, Size(0,0), 2, 2);
+    //bool do_detection = false;
+    //while(true)
+    //{
+    //    Mat frame_image;
+    //    vc>>frame_image;
+    //    if(frame_image.empty())
+    //    {
+    //        cout<<"video ends "<<endl;
+    //        break;
+    //    }
+    //    //resize( frame_image, frame_image, Size(0,0), 2, 2);
 
-        /*  do detection */
-        if(do_detection)
-        {
-            vector<Rect> results;
-            vector<double> confs;
-            fhog_sc.detectMultiScale( frame_image, results, confs, Size(40,40), Size(600,600),1.2, 1, -0.08);
-            for(unsigned int c=0;c<results.size();c++)
-            {
-                cout<<"conf is "<<confs[c]<<endl;
-                rectangle( frame_image, results[c], Scalar(255,0,255), 2);
-            }
-        }
+    //    /*  do detection */
+    //    if(do_detection)
+    //    {
+    //        vector<Rect> results;
+    //        vector<double> confs;
+    //        fhog_sc.detectMultiScale( frame_image, results, confs, Size(40,40), Size(600,600),1.2, 1, -0.08);
+    //        for(unsigned int c=0;c<results.size();c++)
+    //        {
+    //            cout<<"conf is "<<confs[c]<<endl;
+    //            rectangle( frame_image, results[c], Scalar(255,0,255), 2);
+    //        }
+    //    }
 
-        imshow("frame", frame_image);
-        char c = waitKey(30);
-        if(c=='t')
-            do_detection = true;
-        else if(c=='s')
-            do_detection = false;
+    //    imshow("frame", frame_image);
+    //    char c = waitKey(30);
+    //    if(c=='t')
+    //        do_detection = true;
+    //    else if(c=='s')
+    //        do_detection = false;
 
-    }
+    //}
 
 
 

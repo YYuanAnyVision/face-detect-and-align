@@ -48,15 +48,15 @@ int main(int argc, char** argv)
         /*  set parameters*/
         int fhog_binsize = 8;       /*  called cell_size in dlib's implementation */
         int fhog_oritent = 9;       /*  fixed to 9 in dlib */
-        cv::Size target_size(80,80);
-        cv::Size padded_size(80+2*fhog_binsize, 80+2*fhog_binsize);     /* in dlib, the paddedsize is fixed to this */
+        cv::Size target_size(80,40);
+        cv::Size padded_size(80+2*fhog_binsize, 40+2*fhog_binsize);     /* in dlib, the paddedsize is fixed to this */
         
 
         /*  paras for training */
         int number_of_thread = 8;
-        double svm_c = 700;
-        double epsilon = 0.05;
-        int nuclear_norm = 9;
+        double svm_c = 1;
+        double epsilon = 0.01;
+        int nuclear_norm = 0;
         double threshold_singluar_value = 0.15;
         string train_log_name = "rotated_face.log";
 
@@ -113,8 +113,8 @@ int main(int argc, char** argv)
 		
 		/* resize the image array if the memory is limited */
 
-		images_train.resize(1700);
-		face_boxes_train.resize(1700);
+		//images_train.resize(1700);
+		//face_boxes_train.resize(1700);
 
         // Now we do a little bit of pre-processing.  This is optional but for
         // this training data it improves the results.  The first thing we do is
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
         //flip_image_dataset_left_right( images_train, face_boxes_train);  
 		
 		/*  rotate the face image ? */
-		rotate_image_dataset( -0.47, images_train, face_boxes_train);
+		//rotate_image_dataset( -0.47, images_train, face_boxes_train);
 
 		cout << "num training images: " << images_train.size() << endl;
 

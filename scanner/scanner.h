@@ -1,5 +1,5 @@
 #ifndef SCANNER_H
-#define SCANNER_h
+#define SCANNER_H
 
 #include <vector>
 #include "opencv2/highgui/highgui.hpp"

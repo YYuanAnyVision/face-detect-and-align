@@ -60,14 +60,18 @@ int main( int argc , char ** argv)
     fhog_sc.visualizeDetector();
 
 
-    Mat frame_image = imread( argv[2] );
-    vector<Rect> results;
-    vector<double> confs;
-    fhog_sc.detectMultiScale( frame_image, results, confs, Size(80,80), Size(1000,1000),1.2, 1, -1);
-    for(unsigned int c=0;c<results.size();c++)
-        rectangle( frame_image, results[c], Scalar(255,0,255), 2);
-    imshow("result",frame_image);
-    waitKey(0);
+    //Mat frame_image = imread( argv[2] );
+    //vector<Rect> results;
+    //vector<double> confs;
+    //tk.reset();tk.start();
+    //fhog_sc.detectMultiScale( frame_image, results, confs, Size(80,80), Size(1000,1000),1.2, 1, 0);
+    //tk.stop();
+    //cout<<"processing time is "<<tk.getTimeMilli()<<endl;
+
+    //for(unsigned int c=0;c<results.size();c++)
+    //    rectangle( frame_image, results[c], Scalar(255,0,255), 2);
+    //imshow("result",frame_image);
+    //waitKey(0);
 
 
 
@@ -96,7 +100,10 @@ int main( int argc , char ** argv)
     //    {
     //        vector<Rect> results;
     //        vector<double> confs;
-    //        fhog_sc.detectMultiScale( frame_image, results, confs, Size(40,40), Size(600,600),1.2, 1, -0.08);
+    //        tk.reset(); tk.start();
+    //        fhog_sc.detectMultiScale( frame_image, results, confs, Size(80,80), Size(600,600),1.2, 1, -0.08);
+    //        tk.stop();
+    //        cout<<"processing time is "<<tk.getTimeMilli()<<endl;
     //        for(unsigned int c=0;c<results.size();c++)
     //        {
     //            cout<<"conf is "<<confs[c]<<endl;
@@ -119,19 +126,19 @@ int main( int argc , char ** argv)
      * ------------------------------------------------------------------------------------
      */
     /*  use check_detector to evaluate the performance */
-    //double _hit = 0;
-    //double _FPPI =0;
-    //detect_check<scanner> dc;
-    //dc.set_path( test_img_folder, test_img_gt, "", true);
-    //dc.set_parameter( Size(40,40), Size(400,400), 1.2, 1, 0);
+    double _hit = 0;
+    double _FPPI =0;
+    detect_check<scanner> dc;
+    dc.set_path( test_img_folder, test_img_gt, "", true);
+    dc.set_parameter( Size(80,80), Size(400,400), 1.2, 1, 0);
 
-    //vector<double> hits;
-    //vector<double> fppis;
-    ////dc.generate_roc( fhog_sc, fppis, hits, 1, -1.5);
-    //dc.test_detector( fhog_sc, _hit, _FPPI);
-    //dc.get_stat_on_missed();
-    //cout<<"Results : \nHit : "<<_hit<<endl<<"FPPI : "<<_FPPI<<endl;
-    //fhog_sc.saveModel( "super_pack_lfw.xml","pin le lao ming");
+    vector<double> hits;
+    vector<double> fppis;
+    //dc.generate_roc( fhog_sc, fppis, hits, 1, -1.5);
+    dc.test_detector( fhog_sc, _hit, _FPPI);
+    dc.get_stat_on_missed();
+    cout<<"Results : \nHit : "<<_hit<<endl<<"FPPI : "<<_FPPI<<endl;
+    //fhog_sc.saveModel( "f_rl_rr_face.xml","pin le lao ming");
     /*
      * ------------------------------------------------------------------------------------
      */

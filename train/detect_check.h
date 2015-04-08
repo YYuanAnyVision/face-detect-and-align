@@ -249,6 +249,53 @@ class detect_check
         return true;
     }
 
+
+
+    /* 
+     * ===  FUNCTION  ======================================================================
+     *         Name:  show_results
+     *  Description:  just show the detection results on folders
+     * =====================================================================================
+     */
+
+    bool show_results(detectType &detector)
+    {
+        if( !check_path())
+            return false;
+
+        vector<string> pos_image_path_vector;
+        bf::directory_iterator end_it;
+
+        for( bf::directory_iterator file_iter( m_pos_img_path ); file_iter!=end_it; file_iter++)
+	    {
+            string pathname = file_iter->path().string();
+            string basename = bf::basename( *file_iter);
+	    	string extname  = bf::extension( *file_iter);
+
+	    	if( extname!=".jpg" && extname!=".bmp" && extname!=".png" && extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+	    		continue;
+
+            Mat input_image = imread( pathname );
+            vector<Rect> det_rects;
+            vector<double> det_confs;
+
+            //TickMeter ff;ff.start();
+            detector.detectMultiScale( input_image, det_rects, det_confs, m_minSize, m_maxSize, m_scale_factor, m_stride, m_threshold);
+
+            for ( int c=0;c<det_rects.size() ; c++) {
+                rectangle( input_image, det_rects[c], Scalar(255,0,255), 3);
+                cout<<"conf is "<<det_confs[c]<<endl;
+            }
+            cout<<endl;
+            imshow("test", input_image);
+            waitKey(0);
+
+
+	    }
+
+
+    }
+
     /* 
      * ===  FUNCTION  ======================================================================
      *         Name:  test_detector

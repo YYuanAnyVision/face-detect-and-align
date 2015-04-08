@@ -43,7 +43,7 @@ int main( int argc , char ** argv)
     //m_paths.push_back( model_path5);
 
     //string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/imgs/";
-    string test_img_folder = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/imgs/";
+    string test_img_folder = "/media/yuanyang/disk1/data/goutiantian_noise/pos/";
     //string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/PCI_test/gts/";
     string test_img_gt = "/media/yuanyang/disk1/data/face_detection_database/other_open_sets/FDDB/test/gts/";
 
@@ -60,7 +60,8 @@ int main( int argc , char ** argv)
     fhog_sc.visualizeDetector();
 
 
-    //Mat frame_image = imread( argv[2] );
+    /*  test on a giving image */
+    //Mat frame_image = imread( "/media/yuanyang/disk1/git/fhog_pyramid_detect/build/train/image_0044.png" );
     //vector<Rect> results;
     //vector<double> confs;
     //tk.reset();tk.start();
@@ -73,6 +74,11 @@ int main( int argc , char ** argv)
     //imshow("result",frame_image);
     //waitKey(0);
 
+    /* test on a folder */
+    detect_check<scanner> dc;
+    dc.set_path( test_img_folder, test_img_gt, "", true);
+    dc.set_parameter( Size(80,15), Size(320,60), 1.2, 1, 0);
+    dc.show_results( fhog_sc );
 
 
     /*  1 test on a giving video */
@@ -126,18 +132,18 @@ int main( int argc , char ** argv)
      * ------------------------------------------------------------------------------------
      */
     /*  use check_detector to evaluate the performance */
-    double _hit = 0;
-    double _FPPI =0;
-    detect_check<scanner> dc;
-    dc.set_path( test_img_folder, test_img_gt, "", true);
-    dc.set_parameter( Size(80,80), Size(400,400), 1.2, 1, 0);
+    //double _hit = 0;
+    //double _FPPI =0;
+    //detect_check<scanner> dc;
+    //dc.set_path( test_img_folder, test_img_gt, "", true);
+    //dc.set_parameter( Size(80,80), Size(400,400), 1.2, 1, 0);
 
-    vector<double> hits;
-    vector<double> fppis;
-    //dc.generate_roc( fhog_sc, fppis, hits, 1, -1.5);
-    dc.test_detector( fhog_sc, _hit, _FPPI);
-    dc.get_stat_on_missed();
-    cout<<"Results : \nHit : "<<_hit<<endl<<"FPPI : "<<_FPPI<<endl;
+    //vector<double> hits;
+    //vector<double> fppis;
+    ////dc.generate_roc( fhog_sc, fppis, hits, 1, -1.5);
+    //dc.test_detector( fhog_sc, _hit, _FPPI);
+    //dc.get_stat_on_missed();
+    //cout<<"Results : \nHit : "<<_hit<<endl<<"FPPI : "<<_FPPI<<endl;
     //fhog_sc.saveModel( "f_rl_rr_face.xml","pin le lao ming");
     /*
      * ------------------------------------------------------------------------------------

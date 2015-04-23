@@ -10,7 +10,6 @@
 
 #include "../misc/misc.hpp"
 #include "../chnfeature/Pyramid.h"
-#include "../svm/opencv_warpper_libsvm.h"
 #include "../scanner/scanner.h"
 
 #include <omp.h> 
@@ -75,56 +74,56 @@ int main( int argc , char ** argv)
     //waitKey(0);
 
     /* test on a folder */
-    detect_check<scanner> dc;
-    dc.set_path( test_img_folder, test_img_gt, "", true);
-    dc.set_parameter( Size(80,15), Size(320,60), 1.2, 1, 0);
-    dc.show_results( fhog_sc );
+    //detect_check<scanner> dc;
+    //dc.set_path( test_img_folder, test_img_gt, "", true);
+    //dc.set_parameter( Size(80,15), Size(320,60), 1.2, 1, 0);
+    //dc.show_results( fhog_sc );
 
 
     /*  1 test on a giving video */
-    //string video_name = string(argv[2]);
-    //cv::VideoCapture vc( video_name);
-    //if(!vc.isOpened())
-    //{
-    //    cout<<"Can not open the video file "<<string(argv[2])<<endl;
-    //}
+    string video_name = string(argv[2]);
+    cv::VideoCapture vc( video_name);
+    if(!vc.isOpened())
+    {
+        cout<<"Can not open the video file "<<string(argv[2])<<endl;
+    }
 
-    //bool do_detection = false;
-    //while(true)
-    //{
-    //    Mat frame_image;
-    //    vc>>frame_image;
-    //    if(frame_image.empty())
-    //    {
-    //        cout<<"video ends "<<endl;
-    //        break;
-    //    }
-    //    //resize( frame_image, frame_image, Size(0,0), 2, 2);
+    bool do_detection = false;
+    while(true)
+    {
+        Mat frame_image;
+        vc>>frame_image;
+        if(frame_image.empty())
+        {
+            cout<<"video ends "<<endl;
+            break;
+        }
+        resize( frame_image, frame_image, Size(0,0), 0.8, 0.8);
 
-    //    /*  do detection */
-    //    if(do_detection)
-    //    {
-    //        vector<Rect> results;
-    //        vector<double> confs;
-    //        tk.reset(); tk.start();
-    //        fhog_sc.detectMultiScale( frame_image, results, confs, Size(80,80), Size(600,600),1.2, 1, -0.08);
-    //        tk.stop();
-    //        cout<<"processing time is "<<tk.getTimeMilli()<<endl;
-    //        for(unsigned int c=0;c<results.size();c++)
-    //        {
-    //            cout<<"conf is "<<confs[c]<<endl;
-    //            rectangle( frame_image, results[c], Scalar(255,0,255), 2);
-    //        }
-    //    }
+        /*  do detection */
+        if(do_detection)
+        {
+            vector<Rect> results;
+            vector<double> confs;
+            tk.reset(); tk.start();
+            fhog_sc.detectMultiScale( frame_image, results, confs, Size(80,80), Size(600,600),1.2, 1, -0.08);
+            tk.stop();
+            cout<<"processing time is "<<tk.getTimeMilli()<<endl;
+            for(unsigned int c=0;c<results.size();c++)
+            {
+                cout<<"conf is "<<confs[c]<<endl;
+                rectangle( frame_image, results[c], Scalar(255,0,255), 2);
+            }
+        }
 
-    //    imshow("frame", frame_image);
-    //    char c = waitKey(30);
-    //    if(c=='t')
-    //        do_detection = true;
-    //    else if(c=='s')
-    //        do_detection = false;
+        imshow("frame", frame_image);
+        char c = waitKey(30);
+        if(c=='t')
+            do_detection = true;
+        else if(c=='s')
+            do_detection = false;
 
-    //}
+    }
 
 
 

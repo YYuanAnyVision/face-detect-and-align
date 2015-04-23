@@ -13,7 +13,6 @@
 
 #include "../misc/misc.hpp"
 #include "../chnfeature/Pyramid.h"
-#include "../svm/opencv_warpper_libsvm.h"
 #include "../scanner/scanner.h"
 
 #include <omp.h> 

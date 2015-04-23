@@ -9,6 +9,6 @@ endif(HAVE_SSE)
 
 add_executable( test_scanner main.cpp  )
 add_library( scanner scanner.h scanner.cpp )
-target_link_libraries( scanner ${OpenCV_LIBS}  opencv_libsvm chnFeature nms)
-target_link_libraries( test_scanner ${OpenCV_LIBS}  opencv_libsvm chnFeature scanner)
+target_link_libraries( scanner ${OpenCV_LIBS}  chnFeature nms)
+target_link_libraries( test_scanner ${OpenCV_LIBS}  chnFeature scanner)
 

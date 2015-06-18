@@ -2,10 +2,21 @@ cmake_minimum_required(VERSION 2.6)
 
 project(shape_predictor)
 find_package(OpenCV REQUIRED)
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+find_package(OpenMP REQUIRED)	
+
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
 
 add_library( shape_predictor shape_predictor.hpp shape_predictor.cpp)
 add_library( tinyxml tinyxml.h tinyxml.cpp)
-add_executable( train_model train_main.cpp)
+add_executable( train_predictor demo_main.cpp)
+add_executable( test_predictor test_main.cpp)
+add_executable( iter_folder process_folder.cpp)
 
-target_link_libraries(  train_demo ${OpenCV_LIBS} shape_predictor tinyxml)
+target_link_libraries(  train_predictor ${OpenCV_LIBS} shape_predictor tinyxml scanner chnFeature nms)
+target_link_libraries(  test_predictor ${OpenCV_LIBS} shape_predictor tinyxml scanner chnFeature nms)
+target_link_libraries(  iter_folder ${Boost_LIBRARIES} ${OpenCV_LIBS} shape_predictor tinyxml scanner chnFeature nms )
 

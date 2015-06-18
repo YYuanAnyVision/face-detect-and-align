@@ -5,11 +5,25 @@
 #include "opencv2/contrib/contrib.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
+
+#include "../scanner/scanner.h"
 #include "shape_predictor.hpp"
 #include "tinyxml.h"
 
 using namespace std;
 using namespace cv;
+
+double isSameTarget( Rect r1, Rect r2)
+{
+	Rect intersect = r1 & r2;
+	if(intersect.width * intersect.height < 1)
+		return 0;
+
+	double union_area = r1.width*r1.height + r2.width*r2.height - intersect.width*intersect.height;
+
+	return intersect.width*intersect.height/union_area;
+}
+
 
 string yy_to_string( int x)
 {
@@ -21,9 +35,10 @@ string yy_to_string( int x)
 }
 
 void load_train_file( 
+	scanner &face_det,				/* in : face detector */
 	const string &train_file_path,	/* in : train file path*/
 	const string &image_root,		/* in : root of the image folder*/
-	int face_width,			/* in : resize those whos width > image_max_width*/
+	int face_width,			        /* in : resize those whos width > image_max_width*/
 	vector<Mat> &imgs,				/* out: imgs*/
 	vector<vector<Rect> > &rects,	/* out: rects */
 	vector<vector<shape_type> > &shapes)	/* out: shapes */
@@ -48,13 +63,17 @@ void load_train_file(
 
 	TiXmlElement *imagesElement = commentElement->NextSiblingElement();
 	TiXmlElement *iterImageElement = imagesElement->FirstChildElement();
+
+	long counter =0;
 	for(; iterImageElement; iterImageElement = iterImageElement->NextSiblingElement()) //image section
 	{
+		cout<<"processing image "<<counter++<<endl;
 		TiXmlAttribute *iterAtt = iterImageElement->FirstAttribute();
 		// eg file = 2008.12.23.jpg
 		//cout<<iterAtt->Name()<<" = "<<iterAtt->Value()<<endl;
 		t_scale = 1.0;
 		bool first_rect = true;
+		bool matched = false;
 		Mat input_img = imread( image_root + iterAtt->Value(), CV_LOAD_IMAGE_GRAYSCALE);
 		
 		assert( !input_img.empty());
@@ -75,6 +94,10 @@ void load_train_file(
 			{
 				t_scale = 1.0*face_width/temp_rect.width;
 				first_rect = false;
+
+				/* add the image*/
+				cv::resize( input_img, input_img, Size(0,0), t_scale, t_scale);
+				
 			}
 
 			temp_rect.y *= t_scale;
@@ -82,6 +105,31 @@ void load_train_file(
 			temp_rect.width *= t_scale;
 			temp_rect.height *= t_scale;
 
+			/*show */
+			//cv::rectangle( input_img, temp_rect, Scalar(255,255,255), 2);
+			vector<Rect> results;
+			vector<double> confs;
+			face_det.detectMultiScale(input_img, results, confs, Size(160,160), Size(500,500), 1.2, 0);
+
+			
+			for (unsigned long i=0;i<results.size();i++)
+			{
+				//cv::rectangle( input_img, results[i], Scalar(0,0,0), 2);
+				if ( isSameTarget(results[i], temp_rect) > 0.5)
+				{
+					temp_rect = results[i];
+					cout<<"Matched"<<endl;
+					matched = true;
+					break;
+				}
+			}
+
+			if(!matched)
+				continue;
+
+			//imshow( "show", input_img);
+			//waitKey(0);
+			
 			rects_in_this_image.push_back( temp_rect);
 			//for( TiXmlAttribute *iterRect = iterBox->FirstAttribute(); iterRect; iterRect = iterRect->Next())
 			//{
@@ -99,9 +147,10 @@ void load_train_file(
 			}
 			shapes_in_this_image.push_back( temp_shape);
 		}
-		cv::resize( input_img, input_img, Size(0,0), t_scale, t_scale);
-		imgs.push_back(input_img);
+		if(!matched)
+			continue;
 
+		imgs.push_back(input_img);
 		rects.push_back( rects_in_this_image);
 		shapes.push_back( shapes_in_this_image);
 	}
@@ -109,6 +158,14 @@ void load_train_file(
 
 int main( int argc, char** argv)
 {
+	/* load face dectector */
+	scanner fhog_sc;
+	if(!fhog_sc.loadModel("super_pack_lfw.xml"))
+	{
+		cout<<"Can not load the face detector model"<<endl;
+		return 1;
+	}
+
 	/* prepare the training parameters */
 	string train_file_xml = "helen_trainset_info.xml"; // training file
 	string image_root = "F:\\data\\facial_point_data\\download\\helen\\trainset\\";
@@ -116,7 +173,7 @@ int main( int argc, char** argv)
 	vector<vector<Rect> > rects;	// store the rects;
 	vector<vector<shape_type> > shapes;	// store the shapes
 	
-	load_train_file( train_file_xml, image_root, 256, imgs, rects, shapes);
+	load_train_file( fhog_sc, train_file_xml, image_root, 256, imgs, rects, shapes);
 
 	cout<<"imgs size "<<imgs.size()<<endl;
 	cout<<"rects size "<<rects.size()<<endl;
@@ -161,7 +218,7 @@ int main( int argc, char** argv)
 	/* Test the shape predictor */
 	string test_file_path = "helen_testset_info.xml";
 	image_root = "F:\\data\\facial_point_data\\download\\helen\\testset\\";
-	load_train_file( test_file_path, image_root,256, imgs, rects, shapes);
+	load_train_file( fhog_sc, test_file_path, image_root,256, imgs, rects, shapes);
 
 	cout<<"Test error is "<<trainer.test_shape_predictor(sp, imgs, rects, shapes)<<endl;
 

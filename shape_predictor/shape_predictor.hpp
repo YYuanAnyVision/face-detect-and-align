@@ -5,6 +5,7 @@
 #include <limits>
 #include <sstream>
 #include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 
 #define SHAPE_LENGTH 136
 typedef cv::Matx<float,SHAPE_LENGTH,1> shape_type;
@@ -318,6 +319,75 @@ public:
 		load the model
 	!*/
 	bool load_model( const string &model_path);
+
+
+	/*!
+		get eyes center
+	!*/
+	static void get_eye_center( const shape_type &shape,	/* in */
+										Point &eye1,		/* out */
+										Point &eye2 )		/* out */
+	{
+		eye1.x = (shape(37*2,0)+shape(38*2,0)+shape(40*2,0)+shape(41*2,0))/4;
+		eye1.y = (shape(37*2+1,0)+shape(38*2+1,0)+shape(40*2+1,0)+shape(41*2+1,0))/4;
+
+		eye2.x = (shape(43*2,0)+shape(44*2,0)+shape(46*2,0)+shape(47*2,0))/4;
+		eye2.y = (shape(43*2+1,0)+shape(44*2+1,0)+shape(46*2+1,0)+shape(47*2+1,0))/4;
+	}
+
+	/*!
+		rotate the image according to the eye point
+	!*/
+	static void rotate_image(	Point p1,				/* in : left eye*/
+								Point p2,				/* in : right eye*/
+								const Mat &face_region, /* in : image*/
+								int desired_width,		/* in : desired face image width*/
+								Mat &warp_face) 		/* out: output aligned face image*/
+	{
+		cv::Point2f eyescenter;
+		eyescenter.x = (p1.x+p2.x)*0.5f;
+		eyescenter.y = (p1.y+p2.y)*0.5f;
+
+		double dy = p2.y - p1.y;
+		double dx = p2.x - p1.x;
+
+		double len = sqrt(dx*dx+dy*dy);
+		double angle =  atan2(dy,dx)*180.0/CV_PI;
+
+		const double DESIRED_LEFT_EYE_X = 0.28;     // 控制处理后人脸的多少部分是可见的  
+		const double DESIRED_LEFT_EYE_Y = 0.25;
+		const double DESIRED_RIGHT_EYE_X=1.0f-DESIRED_LEFT_EYE_X; 
+
+		int DESIRED_FACE_WIDTH=desired_width;
+		int DESIRED_FACE_HEIGHT= DESIRED_FACE_WIDTH;  
+
+		double desiredLen=(DESIRED_RIGHT_EYE_X-DESIRED_LEFT_EYE_X);//目标图像两个眼睛直接的比例距离,乘以WIDTH=70即得到距离  
+		double scale=desiredLen*DESIRED_FACE_WIDTH/len;//通过目的图像两个眼睛距离除以原图像两个眼睛的距离，得到旋转矩阵的尺度因子.  
+
+
+		cv::Mat rot_mat = cv::getRotationMatrix2D(eyescenter, angle, scale);//绕原图像两眼连线中心点旋转，旋转角度为angle，缩放尺度为scale  
+
+		double ex=DESIRED_FACE_WIDTH* 0.5f - eyescenter.x;//获取x方向的平移因子,即目标两眼连线中心点的x坐标—原图像两眼连线中心点x坐标  
+		double ey = DESIRED_FACE_HEIGHT*DESIRED_LEFT_EYE_Y-eyescenter.y;//获取x方向的平移因子,即目标两眼连线中心点的x坐标—原图像两眼连线中心点x坐标  
+		rot_mat.at<double>(0, 2) += ex;//将上述结果加到旋转矩阵中控制x平移的位置  
+		rot_mat.at<double>(1, 2) += ey;//将上述结果加到旋转矩阵中控制y平移的位置  
+
+		warp_face = cv::Mat(DESIRED_FACE_WIDTH, DESIRED_FACE_WIDTH,face_region.type());  
+		cv::warpAffine(face_region, warp_face, rot_mat, warp_face.size());  
+	}
+
+	/*!
+		align the face
+	*/
+	static void align_face( const shape_type &shape, 
+							const Mat &input_image,
+							int desired_width,
+							Mat &aligned_face)
+	{
+		Point left_eye, right_eye;
+		get_eye_center( shape, left_eye, right_eye);
+		rotate_image(left_eye, right_eye,input_image, desired_width, aligned_face);
+	}
 
 	/*!
 		draw the shape and rect on a image, help to debug

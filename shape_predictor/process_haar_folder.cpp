@@ -7,6 +7,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/contrib/contrib.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/objdetect/objdetect.hpp"
 
 #include "boost/filesystem.hpp"
 #include "boost/lambda/bind.hpp"
@@ -22,9 +23,9 @@ namespace bf = boost::filesystem;
 
 string get_folder_name( const string &fullpath)
 {
-	size_t pos1 = fullpath.find_last_of("/");
+	size_t pos1 = fullpath.find_last_of("//");
 	string sub_str = fullpath.substr(0,pos1);
-	size_t pos2 = sub_str.find_last_of("/");
+	size_t pos2 = sub_str.find_last_of("//");
 
 	return fullpath.substr(pos2+1,pos1-pos2-1);
 }
@@ -32,7 +33,7 @@ string get_folder_name( const string &fullpath)
 
 void process_folder(  const string &folder_path, 
                       const string &where_to_save_images,
-                      scanner &fhog_sc, 
+                      CascadeClassifier &face_det, 
                       shape_predictor &sp)
 {
 	/*processing sub folder*/
@@ -47,7 +48,7 @@ void process_folder(  const string &folder_path,
             continue;
 
         /*  make subfolder for savint the cropped face image */
-	string folder_name = get_folder_name( pathname );
+		string folder_name = get_folder_name( pathname );
         string save_subfold = where_to_save_images+folder_name;
         if( !bf::exists(save_subfold))
         {
@@ -66,9 +67,13 @@ void process_folder(  const string &folder_path,
             return;
         }
 
+		imshow("show", input_img);
+		waitKey(0);
+
         vector<Rect> faces;
         vector<double> confs;
-        fhog_sc.detectMultiScale( input_img, faces, confs, Size(40,40), Size(300,300), 1.2, 1, 0);
+     
+		face_det.detectMultiScale(input_img, faces, 1.1, 2, 0, Size(40,40));
 
         /* save the first found face */
         if( !faces.empty())
@@ -88,6 +93,9 @@ void process_folder(  const string &folder_path,
             shape_type shape = sp( input_img, faces[biggest_idx]);
             Mat rotate_face;
             shape_predictor::align_face( shape, input_img, 128, rotate_face);
+
+			imshow("rotate_face", rotate_face);
+			waitKey(0);
             
             if( rotate_face.empty())
             {
@@ -102,24 +110,26 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/media/yuanyang/disk1/data/face_database/nonLFW/";
-	string where_to_save_images =  "/media/yuanyang/disk1/data/face_database/nonLFW_crop/";
+	string original_image_folder = "F:\\data\\face_database\\nonLFW\\";
+	string where_to_save_images =  "F:\\data\\face_database\\nonLFW_crop\\";
 
-	/* Load face detector*/
-	scanner fhog_sc;
-	if(!fhog_sc.loadModel("super_pack_lfw.xml"))
+	/* load face dectector */
+	CascadeClassifier face_detector;
+	if(!face_detector.load("frontalface.xml"))
 	{
-		cout<<"Can not load face detector .."<<endl;
-		return 1;
+		cout<<"Can not load model file "<<endl;
+		return -2;
 	}
+	cout<<"Loading face detector done "<<endl;
 
 	/* Load shape predictor */
 	shape_predictor sp;
-	if(!sp.load_model("model.xml"))
+	if(!sp.load_model("haar_shape_model.xml"))
 	{
 		cout<<"Can not load shape predictor"<<endl;
 		return 2;
 	}
+	cout<<"Loading shape regressor done "<<endl;
 
 	/* ------------------------ iterator the folder -----------------------------*/
 	if ( !bf::is_directory(original_image_folder) || !bf::exists(original_image_folder))
@@ -147,11 +157,11 @@ int main( int argc, char** argv)
 	}
     
     int Nthreads = omp_get_max_threads();
-    #pragma omp parallel for num_threads(Nthreads) 
+    //#pragma omp parallel for num_threads(Nthreads) 
     for( long i=0;i<sub_folder_pathes.size();i++)
     {
         cout<<"processing folder "<<sub_folder_pathes[i]<<endl;
-        process_folder( sub_folder_pathes[i], where_to_save_images, fhog_sc, sp );
+        process_folder( sub_folder_pathes[i], where_to_save_images, face_detector, sp );
     }
 
 	return 0;

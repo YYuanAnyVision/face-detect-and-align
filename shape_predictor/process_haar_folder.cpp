@@ -44,8 +44,12 @@ void process_folder(  const string &folder_path,
 		string basename = bf::basename( *file_iter);
 		string extname  = bf::extension( *file_iter);
 
-        if( extname != ".jpg" && extname != ".png" && extname != ".bmp")
+        if( extname != ".jpg" && extname != ".png" && extname != ".bmp" &&
+                extname != ".Jpg" && extname != ".tif")
+        {
+            cout<<"---> Skip file "<<pathname<<endl;
             continue;
+        }
 
         /*  make subfolder for savint the cropped face image */
 		string folder_name = get_folder_name( pathname );
@@ -67,13 +71,13 @@ void process_folder(  const string &folder_path,
             return;
         }
 
-		imshow("show", input_img);
-		waitKey(0);
+		//imshow("show", input_img);
+		//waitKey(0);
 
         vector<Rect> faces;
         vector<double> confs;
      
-		face_det.detectMultiScale(input_img, faces, 1.1, 2, 0, Size(40,40));
+		face_det.detectMultiScale(input_img, faces, 1.1, 2, 0, Size(30,30));
 
         /* save the first found face */
         if( !faces.empty())
@@ -92,10 +96,10 @@ void process_folder(  const string &folder_path,
             /* crop */
             shape_type shape = sp( input_img, faces[biggest_idx]);
             Mat rotate_face;
-            shape_predictor::align_face( shape, input_img, 128, rotate_face);
+            shape_predictor::align_face( shape, input_img, 144, rotate_face);
 
-			imshow("rotate_face", rotate_face);
-			waitKey(0);
+			//imshow("rotate_face", rotate_face);
+			//waitKey(0);
             
             if( rotate_face.empty())
             {
@@ -110,8 +114,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "F:\\data\\face_database\\nonLFW\\";
-	string where_to_save_images =  "F:\\data\\face_database\\nonLFW_crop\\";
+	string original_image_folder = "/home/yuanyang/Data/disosi_superpack/";
+	string where_to_save_images =  "/home/yuanyang/Data/disosi_crop/";
 
 	/* load face dectector */
 	CascadeClassifier face_detector;
@@ -156,11 +160,11 @@ int main( int argc, char** argv)
         sub_folder_pathes.push_back( folder_iter->path().string() );
 	}
     
-    int Nthreads = omp_get_max_threads();
+    //int Nthreads = omp_get_max_threads();
     //#pragma omp parallel for num_threads(Nthreads) 
     for( long i=0;i<sub_folder_pathes.size();i++)
     {
-        cout<<"processing folder "<<sub_folder_pathes[i]<<endl;
+        cout<<"processing folder i "<<i<<"  "<<sub_folder_pathes[i]<<endl;
         process_folder( sub_folder_pathes[i], where_to_save_images, face_detector, sp );
     }
 

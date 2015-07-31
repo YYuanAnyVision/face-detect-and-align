@@ -354,8 +354,8 @@ public:
 		double len = sqrt(dx*dx+dy*dy);
 		double angle =  atan2(dy,dx)*180.0/CV_PI;
 
-		const double DESIRED_LEFT_EYE_X = 0.23;     // 控制处理后人脸的多少部分是可见的  
-		const double DESIRED_LEFT_EYE_Y = 0.22;
+		const double DESIRED_LEFT_EYE_X = 0.28;     // 控制处理后人脸的多少部分是可见的  
+		const double DESIRED_LEFT_EYE_Y = 0.23;
 		const double DESIRED_RIGHT_EYE_X=1.0f-DESIRED_LEFT_EYE_X; 
 
 		int DESIRED_FACE_WIDTH=desired_width;

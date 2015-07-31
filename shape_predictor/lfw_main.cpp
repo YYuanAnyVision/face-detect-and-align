@@ -15,6 +15,7 @@
 #include "../scanner/scanner.h"
 #include "shape_predictor.hpp"
 
+#include "opencv2/objdetect/objdetect.hpp"
 
 using namespace std;
 using namespace cv;
@@ -44,7 +45,7 @@ bool read_in_list( const string &list_file, /* in */
     int idx1,idx2;
     char name1[200];
     char name2[200];
-    int counter =1;
+    int counter =0;
 
     while(1)
     {
@@ -80,7 +81,7 @@ bool read_in_list( const string &list_file, /* in */
 
 int main( int argc, char** argv)
 {
-    string lfw_root = "/media/yuanyang/disk1/data/face_database/lfw/lfw/lfw/";
+    string lfw_root = "/media/yuanyang/disk1/data/face_database/lfw/lfw_funneled/";
     string lfw_file_list = "/media/yuanyang/disk1/data/face_database/lfw/pairs.txt";
     string save_pos_folder1 = "./pos/1/";
     string save_pos_folder2 = "./pos/2/";
@@ -93,28 +94,30 @@ int main( int argc, char** argv)
     read_in_list( lfw_file_list, people1, people2, name1, name2);
     for(int c=0; c<people1.size(); c++)
     {
-        cout<<people1[c]<<" "<<name1[c]<<" "<<people2[c]<<" "<<name2[c]<<endl;
+        cout<<"c "<<c<<" "<<people1[c]<<" "<<name1[c]<<" "<<people2[c]<<" "<<name2[c]<<endl;
     }
 
-	/* Load face detector*/
-	scanner fhog_sc;
-	if(!fhog_sc.loadModel("super_pack_lfw.xml"))
+	/* load face dectector */
+	CascadeClassifier face_detector;
+	if(!face_detector.load("frontalface.xml"))
 	{
-		cout<<"Can not load face detector .."<<endl;
-		return 1;
+		cout<<"Can not load model file "<<endl;
+		return -2;
 	}
+	cout<<"Loading face detector done "<<endl;
+
 
 	/* Load shape predictor */
 	shape_predictor sp;
-	if(!sp.load_model("model.xml"))
+	if(!sp.load_model("haar_shape_model.xml"))
 	{
 		cout<<"Can not load shape predictor"<<endl;
 		return 2;
 	}
 
     int Nthreads = omp_get_max_threads();
-    #pragma omp parallel for num_threads(Nthreads) 
-    for( unsigned long i=0;i<people1.size();i++)
+    //#pragma omp parallel for num_threads(Nthreads) 
+    for(long i=0;i<people1.size();i++)
     {
         cout<<"processing image pair "<<i<<endl;
         char idx1_str[10],idx2_str[10];
@@ -124,17 +127,26 @@ int main( int argc, char** argv)
         string image_name1 = lfw_root+people1[i]+"/"+people1[i]+"_"+string(idx1_str)+".jpg";
         string image_name2 = lfw_root+people2[i]+"/"+people2[i]+"_"+string(idx2_str)+".jpg";
 
-        Mat img1 = imread( image_name1, CV_LOAD_IMAGE_GRAYSCALE);
-        Mat img2 = imread( image_name2, CV_LOAD_IMAGE_GRAYSCALE);
+        Mat img1 = imread( image_name1);
+        Mat img2 = imread( image_name2);
 
+        if( img1.empty() || img2.empty())
+        {
+            cout<<"Can not read image "<<image_name1<<endl;
+            cout<<"or can not read image "<<image_name2<<endl;
+            continue;
+        }
+        
         vector<Rect> face1, face2;
-        vector<double> conf1,conf2;
 
-        fhog_sc.detectMultiScale( img1, face1, conf1, Size(40,40), Size(300,300), 1.2, 1, 0);
-        fhog_sc.detectMultiScale( img2, face2, conf2, Size(40,40), Size(300,300), 1.2, 1, 0);
+		face_detector.detectMultiScale(img1, face1, 1.1, 3, 0, Size(40,40));
+		face_detector.detectMultiScale(img2, face2, 1.1, 3, 0, Size(40,40));
         
         if( face1.empty() || face2.empty() )
+        {
+            cout<<"Failed to detect face in image"<<endl;
             continue;
+        }
 
         int biggest_idx = 0;
         for( unsigned long i=0;i<face1.size();i++)
@@ -145,7 +157,7 @@ int main( int argc, char** argv)
         
         shape_type shape1 = sp( img1, face1[biggest_idx]);
         Mat rotate_face1;
-        shape_predictor::align_face( shape1, img1, 128, rotate_face1);
+        shape_predictor::align_face( shape1, img1, 256, rotate_face1);
 
         biggest_idx = 0;
         for( unsigned long i=0;i<face2.size();i++)
@@ -156,7 +168,11 @@ int main( int argc, char** argv)
         
         shape_type shape2 = sp( img2, face2[biggest_idx]);
         Mat rotate_face2;
-        shape_predictor::align_face( shape2, img2, 128, rotate_face2);
+        shape_predictor::align_face( shape2, img2, 256, rotate_face2);
+
+        //imshow("align1", rotate_face1);
+        //imshow("align2", rotate_face2);
+        //waitKey(0);
 
         char counter_index[50];
         sprintf( counter_index, "%d", i);

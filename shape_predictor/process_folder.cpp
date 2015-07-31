@@ -59,7 +59,7 @@ void process_folder(  const string &folder_path,
         }
 
         /* read and processing image */
-        Mat input_img = imread( pathname, CV_LOAD_IMAGE_GRAYSCALE);
+        Mat input_img = imread( pathname);
         if( input_img.empty() )
         {
             cout<<"Can not open image "<<pathname<<endl;
@@ -87,7 +87,10 @@ void process_folder(  const string &folder_path,
             /* crop */
             shape_type shape = sp( input_img, faces[biggest_idx]);
             Mat rotate_face;
-            shape_predictor::align_face( shape, input_img, 128, rotate_face);
+            shape_predictor::align_face( shape, input_img, 144, rotate_face);
+
+            //imshow("rotate", rotate_face);
+            //waitKey(0);
             
             if( rotate_face.empty())
             {
@@ -102,8 +105,9 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/media/yuanyang/disk1/data/face_database/nonLFW/";
-	string where_to_save_images =  "/media/yuanyang/disk1/data/face_database/nonLFW_crop/";
+	string original_image_folder = "/media/yuanyang/disk1/data/face_database/CASIA_webface/CASIA-WebFace/CASIA-WebFace/";
+	string where_to_save_images =  "/media/yuanyang/disk1/data/face_database/CASIA_webface/casia_crop/";
+
 
 	/* Load face detector*/
 	scanner fhog_sc;

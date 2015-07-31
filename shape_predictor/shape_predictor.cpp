@@ -2,6 +2,7 @@
 #include <deque>
 #include <time.h>
 #include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 #include "shape_predictor.hpp"
 
 using namespace std;
@@ -253,6 +254,17 @@ shape_type shape_predictor::operator()( const Mat &img, const Rect rect) const
 {
 	using namespace impl;
 
+
+    Mat for_process_img;
+    if( 1 != img.channels() )
+    {
+        cv::cvtColor( img, for_process_img, CV_BGR2GRAY);
+    }
+    else
+    {
+        for_process_img = img;
+    }
+
 	/* copy from initial shape */
 	shape_type current_shape(m_initial_shape.val);
 
@@ -260,7 +272,7 @@ shape_type shape_predictor::operator()( const Mat &img, const Rect rect) const
 
 	for( unsigned long iter=0;iter<m_forests.size();iter++)
 	{
-		extract_feature_pixel_values( img, rect, current_shape, m_initial_shape, m_anchor_idx[iter], m_deltas[iter], feature_pixel_values);
+		extract_feature_pixel_values( for_process_img, rect, current_shape, m_initial_shape, m_anchor_idx[iter], m_deltas[iter], feature_pixel_values);
 		// evaluate all the trees at this level of the cascade.
 		for (unsigned long i = 0; i < m_forests[iter].size(); ++i)
 		{

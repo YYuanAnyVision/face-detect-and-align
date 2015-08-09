@@ -68,7 +68,7 @@ void process_folder(  const string &folder_path,
 
         vector<Rect> faces;
         vector<double> confs;
-        fhog_sc.detectMultiScale( input_img, faces, confs, Size(40,40), Size(300,300), 1.2, 1, 0);
+        fhog_sc.detectMultiScale( input_img, faces, confs, Size(80,80), Size(500,500), 1.2, 1, 0.5);
 
         /* save the first found face */
         if( !faces.empty())
@@ -87,7 +87,7 @@ void process_folder(  const string &folder_path,
             /* crop */
             shape_type shape = sp( input_img, faces[biggest_idx]);
             Mat rotate_face;
-            shape_predictor::align_face( shape, input_img, 144, rotate_face);
+            shape_predictor::align_face( shape, input_img, 268, rotate_face);
 
             //imshow("rotate", rotate_face);
             //waitKey(0);
@@ -105,8 +105,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/media/yuanyang/disk1/data/face_database/CASIA_webface/CASIA-WebFace/CASIA-WebFace/";
-	string where_to_save_images =  "/media/yuanyang/disk1/data/face_database/CASIA_webface/casia_crop/";
+	string original_image_folder = "/home/yuanyang/Data/celes/";
+	string where_to_save_images =  "/home/yuanyang/Data/celes_crop/";
 
 
 	/* Load face detector*/

@@ -30,7 +30,7 @@ int main( int argc, char** argv)
 	}
 
 	/* Test */
-	Mat input_img = imread("test3.png",CV_LOAD_IMAGE_GRAYSCALE);
+	Mat input_img = imread("003764_29.jpg",CV_LOAD_IMAGE_GRAYSCALE);
 	//cv::resize( input_img, input_img, Size(0,0), 2, 2);
 	vector<Rect> faces;
 	vector<double> confs;

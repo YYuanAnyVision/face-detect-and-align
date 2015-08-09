@@ -45,7 +45,7 @@ void process_folder(  const string &folder_path,
 		string extname  = bf::extension( *file_iter);
 
         if( extname != ".jpg" && extname != ".png" && extname != ".bmp" &&
-                extname != ".Jpg" && extname != ".tif")
+                extname != ".Jpg" && extname != ".tif" && extname != ".JPG")
         {
             cout<<"---> Skip file "<<pathname<<endl;
             continue;
@@ -64,7 +64,7 @@ void process_folder(  const string &folder_path,
         }
 
         /* read and processing image */
-        Mat input_img = imread( pathname, CV_LOAD_IMAGE_GRAYSCALE);
+        Mat input_img = imread( pathname );
         if( input_img.empty() )
         {
             cout<<"Can not open image "<<pathname<<endl;
@@ -77,7 +77,7 @@ void process_folder(  const string &folder_path,
         vector<Rect> faces;
         vector<double> confs;
      
-		face_det.detectMultiScale(input_img, faces, 1.1, 2, 0, Size(30,30));
+		face_det.detectMultiScale(input_img, faces, 1.1, 2, 0, Size(80,80));
 
         /* save the first found face */
         if( !faces.empty())
@@ -96,7 +96,7 @@ void process_folder(  const string &folder_path,
             /* crop */
             shape_type shape = sp( input_img, faces[biggest_idx]);
             Mat rotate_face;
-            shape_predictor::align_face( shape, input_img, 144, rotate_face);
+            shape_predictor::align_face( shape, input_img, 256, rotate_face);
 
 			//imshow("rotate_face", rotate_face);
 			//waitKey(0);
@@ -114,8 +114,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/home/yuanyang/Data/disosi_superpack/";
-	string where_to_save_images =  "/home/yuanyang/Data/disosi_crop/";
+	string original_image_folder = "/home/yuanyang/Data/celes/";
+	string where_to_save_images =  "/home/yuanyang/Data/celes_crop/";
 
 	/* load face dectector */
 	CascadeClassifier face_detector;

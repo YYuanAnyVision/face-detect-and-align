@@ -77,7 +77,7 @@ void process_folder(  const string &folder_path,
         vector<Rect> faces;
         vector<double> confs;
      
-		face_det.detectMultiScale(input_img, faces, 1.1, 2, 0, Size(80,80));
+		face_det.detectMultiScale(input_img, faces, 1.1, 2, 0, Size(30,30));
 
         /* save the first found face */
         if( !faces.empty())
@@ -114,8 +114,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/home/yuanyang/Data/celes/";
-	string where_to_save_images =  "/home/yuanyang/Data/celes_crop/";
+	string original_image_folder = "/home/yuanyang/Data/verification/";
+	string where_to_save_images =  "/home/yuanyang/Data/verification_crop/";
 
 	/* load face dectector */
 	CascadeClassifier face_detector;

@@ -68,7 +68,7 @@ void process_folder(  const string &folder_path,
 
         vector<Rect> faces;
         vector<double> confs;
-        fhog_sc.detectMultiScale( input_img, faces, confs, Size(80,80), Size(500,500), 1.2, 1, 0.5);
+        fhog_sc.detectMultiScale( input_img, faces, confs, Size(30,30), Size(500,500), 1.2, 1, 0.5);
 
         /* save the first found face */
         if( !faces.empty())
@@ -105,8 +105,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/home/yuanyang/Data/celes/";
-	string where_to_save_images =  "/home/yuanyang/Data/celes_crop/";
+	string original_image_folder = "/home/yuanyang/Data/disosi/";
+	string where_to_save_images =  "/home/yuanyang/Data/disosi_crop/";
 
 
 	/* Load face detector*/

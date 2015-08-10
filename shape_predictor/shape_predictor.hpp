@@ -357,8 +357,10 @@ public:
         /* 256 --> 0.28, 0.23*/
         /* 268 --> 0.2899, 0.2421 */
 
-		const double DESIRED_LEFT_EYE_X = 0.2899;     // 控制处理后人脸的多少部分是可见的  
-		const double DESIRED_LEFT_EYE_Y = 0.2421;
+		//const double DESIRED_LEFT_EYE_X = 0.2899;     // 控制处理后人脸的多少部分是可见的  
+		//const double DESIRED_LEFT_EYE_Y = 0.2421;
+		const double DESIRED_LEFT_EYE_X = 0.28;     // 控制处理后人脸的多少部分是可见的  
+		const double DESIRED_LEFT_EYE_Y = 0.23;
 		const double DESIRED_RIGHT_EYE_X=1.0f-DESIRED_LEFT_EYE_X; 
 
 		int DESIRED_FACE_WIDTH=desired_width;

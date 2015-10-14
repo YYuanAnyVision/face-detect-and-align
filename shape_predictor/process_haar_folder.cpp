@@ -77,7 +77,7 @@ void process_folder(  const string &folder_path,
         vector<Rect> faces;
         vector<double> confs;
      
-		face_det.detectMultiScale(input_img, faces, 1.1, 2, 0, Size(30,30));
+		face_det.detectMultiScale(input_img, faces, 1.1, 3, 0, Size(60,60));
 
         /* save the first found face */
         if( !faces.empty())

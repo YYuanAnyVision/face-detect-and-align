@@ -43,11 +43,12 @@ void process_folder(  const string &folder_path,
 		string basename = bf::basename( *file_iter);
 		string extname  = bf::extension( *file_iter);
 
-        if( extname != ".jpg" && extname != ".png" && extname != ".bmp")
+        if( extname != ".jpg" && extname != ".png" && extname != ".bmp" && extname != ".tif" &&
+            extname != ".JPG" && extname != ".PNG" && extname != ".BMP")
             continue;
 
         /*  make subfolder for savint the cropped face image */
-	string folder_name = get_folder_name( pathname );
+	    string folder_name = get_folder_name( pathname );
         string save_subfold = where_to_save_images+folder_name;
         if( !bf::exists(save_subfold))
         {
@@ -68,28 +69,26 @@ void process_folder(  const string &folder_path,
 
         vector<Rect> faces;
         vector<double> confs;
-        fhog_sc.detectMultiScale( input_img, faces, confs, Size(30,30), Size(500,500), 1.2, 1, 0.5);
+        fhog_sc.detectMultiScale( input_img, faces, confs, Size(40,40), Size(800,800), 1.1, 1, 0.15);
 
         /* save the first found face */
-        if( !faces.empty())
+        for(int index = 0; index < faces.size(); index++)
         {
-            /* find the biggest face */
-            int biggest_idx = 0;
-            for( unsigned long i=0;i<faces.size();i++)
-            {
-                if( faces[i].width > faces[biggest_idx].width)
-                {
-                    biggest_idx = i;
-                }
-
-            }
-
             /* crop */
-            shape_type shape = sp( input_img, faces[biggest_idx]);
+            shape_type shape = sp( input_img, faces[index]);
             Mat rotate_face;
             shape_predictor::align_face( shape, input_img, 268, rotate_face);
 
+            /*  draw */
+            vector<shape_type> shapes;
+            shapes.push_back( shape);
+
+            vector<Rect> faces2;
+            faces2.push_back( faces[index]);
+            
+            //Mat draw = shape_predictor::draw_shape( input_img, faces2, shapes);
             //imshow("rotate", rotate_face);
+            //imshow("draw", draw);
             //waitKey(0);
             
             if( rotate_face.empty())
@@ -97,7 +96,9 @@ void process_folder(  const string &folder_path,
                 cout<<"Error, rotated image empty" <<endl;
                 return;
             }
-            string save_path = save_subfold+ "/" + basename + ".jpg";
+
+            stringstream ss; ss<<index; string idx_s; ss>>idx_s;
+            string save_path = save_subfold+ "/" + basename +"_"+idx_s+".jpg";
             imwrite( save_path , rotate_face );
         }
 	}
@@ -105,13 +106,18 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/home/yuanyang/Data/disosi/";
-	string where_to_save_images =  "/home/yuanyang/Data/disosi_crop/";
+	//string original_image_folder = "/home/yuanyang/Data/disosi/";
+	//string where_to_save_images =  "/home/yuanyang/Data/disosi_crop/";
 
+	string original_image_folder = "/home/yuanyang/Data/chinese_celebrity/";
+	string where_to_save_images =  "/home/yuanyang/Data/chinese_output/";
+
+	//string original_image_folder = "/media/yuanyang/disk1/data/face_database/pci_staff/resultss/9083/for_test/";
+	//string where_to_save_images =  "/home/yuanyang/Data/pci_staff/";
 
 	/* Load face detector*/
 	scanner fhog_sc;
-	if(!fhog_sc.loadModel("super_pack_lfw.xml"))
+	if(!fhog_sc.loadModel("f_rl_rr_face.xml"))
 	{
 		cout<<"Can not load face detector .."<<endl;
 		return 1;

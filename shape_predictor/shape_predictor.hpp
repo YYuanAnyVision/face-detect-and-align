@@ -357,10 +357,10 @@ public:
         /* 256 --> 0.28, 0.23*/
         /* 268 --> 0.2899, 0.2421 */
 
-		//const double DESIRED_LEFT_EYE_X = 0.2899;     // 控制处理后人脸的多少部分是可见的  
-		//const double DESIRED_LEFT_EYE_Y = 0.2421;
-		const double DESIRED_LEFT_EYE_X = 0.28;     // 控制处理后人脸的多少部分是可见的  
-		const double DESIRED_LEFT_EYE_Y = 0.23;
+		const double DESIRED_LEFT_EYE_X = 0.3;     // 控制处理后人脸的多少部分是可见的  
+		const double DESIRED_LEFT_EYE_Y = 0.25;
+		//const double DESIRED_LEFT_EYE_X = 0.28;     // 控制处理后人脸的多少部分是可见的  
+		//const double DESIRED_LEFT_EYE_Y = 0.23;
 		const double DESIRED_RIGHT_EYE_X=1.0f-DESIRED_LEFT_EYE_X; 
 
 		int DESIRED_FACE_WIDTH=desired_width;
@@ -401,18 +401,18 @@ public:
 		const Mat &img, 
 		const vector<Rect> &rects, 
 		const vector<shape_type> &shapes,
-		Scalar color = Scalar( 0, 0, 0)
+		Scalar color = Scalar( 255, 255, 255)
 		)
 	{
 		Mat draw = img.clone();
 		
 		for (unsigned long i=0;i<rects.size();i++)
 		{
-			cv::rectangle( draw, rects[i], color);
+			cv::rectangle( draw, rects[i], color, 3);
 			for (unsigned long j=0;j<shapes[i].rows/2;j++)
 			{
 				Point pt( (int)shapes[i](j*2,0), (int)shapes[i](2*j+1,0));
-				cv::circle( draw, pt, 2, color);
+				cv::circle( draw, pt, 3, color);
 			}
 		}
 		return draw;

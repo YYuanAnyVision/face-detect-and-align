@@ -357,10 +357,9 @@ public:
         /* 256 --> 0.28, 0.23*/
         /* 268 --> 0.2899, 0.2421 */
 
-		const double DESIRED_LEFT_EYE_X = 0.3;     // 控制处理后人脸的多少部分是可见的  
-		const double DESIRED_LEFT_EYE_Y = 0.25;
-		//const double DESIRED_LEFT_EYE_X = 0.28;     // 控制处理后人脸的多少部分是可见的  
-		//const double DESIRED_LEFT_EYE_Y = 0.23;
+		const double DESIRED_LEFT_EYE_X = 0.32;     // 控制处理后人脸的多少部分是可见的  
+		const double DESIRED_LEFT_EYE_Y = 0.3;
+
 		const double DESIRED_RIGHT_EYE_X=1.0f-DESIRED_LEFT_EYE_X; 
 
 		int DESIRED_FACE_WIDTH=desired_width;
@@ -381,8 +380,44 @@ public:
 		cv::warpAffine(face_region, warp_face, rot_mat, warp_face.size());  
 	}
 
+
 	/*!
-		align the face
+		rotate the image according to the mouth and eyebrow center
+	!*/
+	static void rotate_image2(	Point eyebrow_center,	/* in : eyeborw center */
+								Point mouth_center,		/* in : mouth center*/
+								const Mat &face_region, /* in : image*/
+								int desired_width,		/* in : desired face image width*/
+								Mat &warp_face) 		/* out: output aligned face image*/
+	{
+        double dy = eyebrow_center.x - mouth_center.x;
+        double dx = eyebrow_center.y - mouth_center.y;
+
+		double len = sqrt(dx*dx+dy*dy);
+		double angle =  -1*atan2(-1*dy,dx)*180.0/CV_PI +180;
+
+        /* 256 --> 0.28, 0.23*/
+        /* 268 --> 0.2899, 0.2421 */
+
+		const double ratio_to_top   = 0.4;     // eyebrow_center to the top of the image
+		const double ratio_of_middle = 0.35;   // ratio of the distance between eyebrow_center to mouth_center
+        
+		double scale =  desired_width*ratio_of_middle / len;
+
+		cv::Mat rot_mat = cv::getRotationMatrix2D(eyebrow_center, angle, scale);//绕原图像两眼连线中心点旋转，旋转角度为angle，缩放尺度为scale  
+
+		double ex=desired_width* 0.5f - eyebrow_center.x;//获取x方向的平移因子,即目标两眼连线中心点的x坐标—原图像两眼连线中心点x坐标  
+		double ey =  desired_width*ratio_to_top -eyebrow_center.y;//获取x方向的平移因子,即目标两眼连线中心点的x坐标—原图像两眼连线中心点x坐标  
+		rot_mat.at<double>(0, 2) += ex;//将上述结果加到旋转矩阵中控制x平移的位置  
+		rot_mat.at<double>(1, 2) += ey;//将上述结果加到旋转矩阵中控制y平移的位置  
+
+		warp_face = cv::Mat(desired_width, desired_width ,face_region.type());  
+		cv::warpAffine(face_region, warp_face, rot_mat, warp_face.size());  
+	}
+
+
+	/*!
+		align the face using eye center
 	*/
 	static void align_face( const shape_type &shape, 
 							const Mat &input_image,
@@ -392,6 +427,26 @@ public:
 		Point left_eye, right_eye;
 		get_eye_center( shape, left_eye, right_eye);
 		rotate_image(left_eye, right_eye,input_image, desired_width, aligned_face);
+	}
+
+
+	/*!
+		align the face using eyebrow center and mouth center
+	*/
+	static void align_face2( const shape_type &shape, 
+							 const Mat &input_image,
+							 int desired_width,
+							 Mat &aligned_face)
+	{
+        Point mouth_center;
+        Point eyebrow_center;
+
+        mouth_center.x = (shape(50*2,0) + shape(51*2,0) + shape(52*2,0))/3;
+        mouth_center.y = (shape(50*2+1,0) + shape(51*2+1,0) + shape(52*2+1,0))/3;
+        eyebrow_center.x = shape(27*2,0);
+        eyebrow_center.y = shape(27*2+1,0);
+        
+		rotate_image2(eyebrow_center, mouth_center,input_image, desired_width, aligned_face);
 	}
 
 	/*!

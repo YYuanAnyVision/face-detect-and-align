@@ -60,16 +60,26 @@ void process_folder(  const string &folder_path,
         }
 
         /* read and processing image */
+        //cout<<"processing image "<<pathname<<endl;
         Mat input_img = imread( pathname);
+        
+        // resize the image if it is too large
+        if( input_img.rows > 1000 )
+            cv::resize( input_img, input_img, Size(0,0), 1000.0/input_img.rows, 1000.0/input_img.rows);
+
+
         if( input_img.empty() )
         {
             cout<<"Can not open image "<<pathname<<endl;
-            return;
+            continue;
         }
 
         vector<Rect> faces;
         vector<double> confs;
         fhog_sc.detectMultiScale( input_img, faces, confs, Size(40,40), Size(800,800), 1.1, 1, 0.15);
+
+        if( faces.size() > 1)
+            continue;
 
         /* save the first found face */
         for(int index = 0; index < faces.size(); index++)
@@ -86,7 +96,7 @@ void process_folder(  const string &folder_path,
             vector<Rect> faces2;
             faces2.push_back( faces[index]);
             
-            //Mat draw = shape_predictor::draw_shape( input_img, faces2, shapes);
+            Mat draw = shape_predictor::draw_shape( input_img, faces2, shapes);
             //imshow("rotate", rotate_face);
             //imshow("draw", draw);
             //waitKey(0);
@@ -109,8 +119,8 @@ int main( int argc, char** argv)
 	//string original_image_folder = "/home/yuanyang/Data/disosi/";
 	//string where_to_save_images =  "/home/yuanyang/Data/disosi_crop/";
 
-	string original_image_folder = "/home/yuanyang/Data/chinese_celebrity/";
-	string where_to_save_images =  "/home/yuanyang/Data/chinese_output/";
+	string original_image_folder = "/home/yuanyang/Data/cele_output/";
+	string where_to_save_images =  "/home/yuanyang/Data/cele_align/";
 
 	//string original_image_folder = "/media/yuanyang/disk1/data/face_database/pci_staff/resultss/9083/for_test/";
 	//string where_to_save_images =  "/home/yuanyang/Data/pci_staff/";
@@ -160,7 +170,7 @@ int main( int argc, char** argv)
     #pragma omp parallel for num_threads(Nthreads) 
     for( long i=0;i<sub_folder_pathes.size();i++)
     {
-        cout<<"processing folder "<<sub_folder_pathes[i]<<endl;
+        cout<<"processing folder "<<i<<" "<<sub_folder_pathes[i]<<endl;
         process_folder( sub_folder_pathes[i], where_to_save_images, fhog_sc, sp );
     }
 

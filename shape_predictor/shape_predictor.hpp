@@ -357,8 +357,11 @@ public:
         /* 256 --> 0.28, 0.23*/
         /* 268 --> 0.2899, 0.2421 */
 
-		const double DESIRED_LEFT_EYE_X = 0.32;     // 控制处理后人脸的多少部分是可见的  
-		const double DESIRED_LEFT_EYE_Y = 0.3;
+		//const double DESIRED_LEFT_EYE_X = 0.32;     // align 细致的参数
+		//const double DESIRED_LEFT_EYE_Y = 0.3;
+
+		const double DESIRED_LEFT_EYE_X = 0.4;     //  pre align 的参数
+		const double DESIRED_LEFT_EYE_Y = 0.42;
 
 		const double DESIRED_RIGHT_EYE_X=1.0f-DESIRED_LEFT_EYE_X; 
 

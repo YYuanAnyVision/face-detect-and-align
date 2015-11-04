@@ -87,7 +87,7 @@ void process_folder(  const string &folder_path,
             /* crop */
             shape_type shape = sp( input_img, faces[index]);
             Mat rotate_face;
-            shape_predictor::align_face( shape, input_img, 536, rotate_face);
+            shape_predictor::align_face( shape, input_img, 268, rotate_face);
 
             /*  draw */
             vector<shape_type> shapes;
@@ -119,8 +119,8 @@ int main( int argc, char** argv)
 	//string original_image_folder = "/home/yuanyang/Data/disosi/";
 	//string where_to_save_images =  "/home/yuanyang/Data/disosi_crop/";
 
-	string original_image_folder = "/home/yuanyang/Data/casia/";
-	string where_to_save_images =  "/home/yuanyang/Data/casia_pre_536/";
+	string original_image_folder = "/home/yuanyang/Data/cfc_20151103/";
+	string where_to_save_images =  "/home/yuanyang/Data/cfc_268/ ";
 
 	//string original_image_folder = "/media/yuanyang/disk1/data/face_database/pci_staff/resultss/9083/for_test/";
 	//string where_to_save_images =  "/home/yuanyang/Data/pci_staff/";

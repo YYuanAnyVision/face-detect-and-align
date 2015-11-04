@@ -4,8 +4,8 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/contrib/contrib.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/objdetect/objdetect.hpp"
 
-#include "../scanner/scanner.h"
 #include "shape_predictor.hpp"
 
 using namespace std;
@@ -14,28 +14,31 @@ using namespace cv;
 int main( int argc, char** argv)
 {
 	/* Load face detector*/
-	scanner fhog_sc;
-	if(!fhog_sc.loadModel("super_pack_lfw.xml"))
+    CascadeClassifier face_detector;
+	if(!face_detector.load("frontalface.xml"))
 	{
-		cout<<"Can not load face detector .."<<endl;
-		return 1;
+		cout<<"Can not load model file "<<endl;
+		return -2;
 	}
+	cout<<"Loading face detector done "<<endl;
+
 
 	/* Load shape predictor */
 	shape_predictor sp;
-	if(!sp.load_model("model.xml"))
+	if(!sp.load_model("haar_shape_model.xml"))
 	{
 		cout<<"Can not load shape predictor"<<endl;
 		return 2;
 	}
 
 	/* Test */
-	Mat input_img = imread("test2.png",CV_LOAD_IMAGE_GRAYSCALE);
+	Mat input_img = imread("003764_29.jpg",CV_LOAD_IMAGE_GRAYSCALE);
 	//cv::resize( input_img, input_img, Size(0,0), 2, 2);
-	vector<Rect> faces;
-	vector<double> confs;
-	fhog_sc.detectMultiScale( input_img, faces, confs, Size(80,80), Size(300,300), 1.2, 1, 0);
-	 
+   
+    vector<Rect> faces;
+    vector<double> confs;
+	face_detector.detectMultiScale(input_img, faces, 1.1, 3, 0, Size(60,60));
+ 
 	vector<shape_type> shapes;
 	for ( unsigned long i=0;i<faces.size(); i++)
 	{

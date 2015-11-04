@@ -354,14 +354,13 @@ public:
 		double len = sqrt(dx*dx+dy*dy);
 		double angle =  atan2(dy,dx)*180.0/CV_PI;
 
-        /* 256 --> 0.28, 0.23*/
-        /* 268 --> 0.2899, 0.2421 */
+        // 0.32 0.3
+        //
+		const double DESIRED_LEFT_EYE_X = 0.3;     // align 细致的参数
+		const double DESIRED_LEFT_EYE_Y = 0.35;
 
-		//const double DESIRED_LEFT_EYE_X = 0.32;     // align 细致的参数
-		//const double DESIRED_LEFT_EYE_Y = 0.3;
-
-		const double DESIRED_LEFT_EYE_X = 0.4;     //  pre align 的参数
-		const double DESIRED_LEFT_EYE_Y = 0.42;
+		//const double DESIRED_LEFT_EYE_X = 0.4;     //  pre align 的参数
+		//const double DESIRED_LEFT_EYE_Y = 0.42;
 
 		const double DESIRED_RIGHT_EYE_X=1.0f-DESIRED_LEFT_EYE_X; 
 

@@ -76,7 +76,7 @@ void process_folder(  const string &folder_path,
 
         vector<Rect> faces;
         vector<double> confs;
-        fhog_sc.detectMultiScale( input_img, faces, confs, Size(40,40), Size(800,800), 1.1, 1, 0.15);
+        fhog_sc.detectMultiScale( input_img, faces, confs, Size(40,40), Size(800,800), 1.2, 1, 0.2);
 
         if( faces.size() > 1)
             continue;
@@ -116,18 +116,18 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	//string original_image_folder = "/home/yuanyang/Data/disosi/";
-	//string where_to_save_images =  "/home/yuanyang/Data/disosi_crop/";
+	string original_image_folder = "/home/yuanyang/Data/lfw_test_pair/neg/";
+	string where_to_save_images =  "/home/yuanyang/Data/lfw_crop/neg/";
 
-	string original_image_folder = "/home/yuanyang/Data/cfc_20151103/";
-	string where_to_save_images =  "/home/yuanyang/Data/cfc_268/ ";
+	//string original_image_folder = "/home/yuanyang/Data/id_test_data/id_test_data_original/";
+	//string where_to_save_images =  "/home/yuanyang/Data/id_test_data/verification/";
 
 	//string original_image_folder = "/media/yuanyang/disk1/data/face_database/pci_staff/resultss/9083/for_test/";
 	//string where_to_save_images =  "/home/yuanyang/Data/pci_staff/";
 
 	/* Load face detector*/
 	scanner fhog_sc;
-	if(!fhog_sc.loadModel("f_rl_rr_face.xml"))
+	if(!fhog_sc.loadModel("super_pack_lfw.xml"))
 	{
 		cout<<"Can not load face detector .."<<endl;
 		return 1;

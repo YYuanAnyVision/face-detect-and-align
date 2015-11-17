@@ -328,11 +328,11 @@ public:
 										Point &eye1,		/* out */
 										Point &eye2 )		/* out */
 	{
-		eye1.x = (shape(37*2,0)+shape(38*2,0)+shape(40*2,0)+shape(41*2,0))/4;
-		eye1.y = (shape(37*2+1,0)+shape(38*2+1,0)+shape(40*2+1,0)+shape(41*2+1,0))/4;
+		eye1.x = (shape(36*2,0)+shape(37*2,0)+shape(38*2,0)+shape(39*2,0)+shape(40*2,0)+shape(41*2,0))/4;
+		eye1.y = (shape(36*2+1,0)+shape(37*2+1,0)+shape(38*2+1,0)+shape(39*2+1,0)+shape(40*2+1,0)+shape(41*2+1,0))/4;
 
-		eye2.x = (shape(43*2,0)+shape(44*2,0)+shape(46*2,0)+shape(47*2,0))/4;
-		eye2.y = (shape(43*2+1,0)+shape(44*2+1,0)+shape(46*2+1,0)+shape(47*2+1,0))/4;
+		eye2.x = (shape(42*2,0)+shape(43*2,0)+shape(44*2,0)+shape(45*2,0)+shape(46*2,0)+shape(47*2,0))/4;
+		eye2.y = (shape(42*2+1,0)+shape(43*2+1,0)+shape(44*2+1,0)+shape(45*2+1,0)+shape(46*2+1,0)+shape(47*2+1,0))/4;
 	}
 
 	/*!
@@ -354,10 +354,13 @@ public:
 		double len = sqrt(dx*dx+dy*dy);
 		double angle =  atan2(dy,dx)*180.0/CV_PI;
 
-        // 0.32 0.3
-        //
+        // desmond
 		const double DESIRED_LEFT_EYE_X = 0.3;     // align 细致的参数
 		const double DESIRED_LEFT_EYE_Y = 0.35;
+        
+        // yy
+		//const double DESIRED_LEFT_EYE_X = 0.32;     // align 细致的参数
+		//const double DESIRED_LEFT_EYE_Y = 0.3;
 
 		//const double DESIRED_LEFT_EYE_X = 0.4;     //  pre align 的参数
 		//const double DESIRED_LEFT_EYE_Y = 0.42;

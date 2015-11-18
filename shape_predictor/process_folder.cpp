@@ -76,7 +76,7 @@ void process_folder(  const string &folder_path,
 
         vector<Rect> faces;
         vector<double> confs;
-        fhog_sc.detectMultiScale( input_img, faces, confs, Size(40,40), Size(800,800), 1.2, 1, 0.2);
+        fhog_sc.detectMultiScale( input_img, faces, confs, Size(30,30), Size(800,800), 1.2, 1, 0);
 
         if( faces.size() > 1)
             continue;
@@ -116,8 +116,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/home/yuanyang/Data/lfw_test_pair/neg/";
-	string where_to_save_images =  "/home/yuanyang/Data/lfw_crop/neg/";
+	string original_image_folder = "/home/yuanyang/Data/gallery/";
+	string where_to_save_images =  "/home/yuanyang/Data/gallery_crop/";
 
 	//string original_image_folder = "/home/yuanyang/Data/id_test_data/id_test_data_original/";
 	//string where_to_save_images =  "/home/yuanyang/Data/id_test_data/verification/";

@@ -96,7 +96,7 @@ void process_folder(  const string &folder_path,
             /* crop */
             shape_type shape = sp( input_img, faces[biggest_idx]);
             Mat rotate_face;
-            shape_predictor::align_face( shape, input_img, 256, rotate_face);
+            shape_predictor::align_face( shape, input_img, 268, rotate_face);
 
 			//imshow("rotate_face", rotate_face);
 			//waitKey(0);
@@ -114,8 +114,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/home/yuanyang/Data/verification/";
-	string where_to_save_images =  "/home/yuanyang/Data/verification_crop/";
+	string original_image_folder = "/home/yuanyang/Data/gallery/";
+	string where_to_save_images =  "/home/yuanyang/Data/gallery_crop/";
 
 	/* load face dectector */
 	CascadeClassifier face_detector;

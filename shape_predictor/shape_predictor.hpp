@@ -328,11 +328,11 @@ public:
 										Point &eye1,		/* out */
 										Point &eye2 )		/* out */
 	{
-		eye1.x = (shape(36*2,0)+shape(37*2,0)+shape(38*2,0)+shape(39*2,0)+shape(40*2,0)+shape(41*2,0))/4;
-		eye1.y = (shape(36*2+1,0)+shape(37*2+1,0)+shape(38*2+1,0)+shape(39*2+1,0)+shape(40*2+1,0)+shape(41*2+1,0))/4;
+		eye1.x = (shape(36*2,0)+shape(37*2,0)+shape(38*2,0)+shape(39*2,0)+shape(40*2,0)+shape(41*2,0))/6;
+		eye1.y = (shape(36*2+1,0)+shape(37*2+1,0)+shape(38*2+1,0)+shape(39*2+1,0)+shape(40*2+1,0)+shape(41*2+1,0))/6;
 
-		eye2.x = (shape(42*2,0)+shape(43*2,0)+shape(44*2,0)+shape(45*2,0)+shape(46*2,0)+shape(47*2,0))/4;
-		eye2.y = (shape(42*2+1,0)+shape(43*2+1,0)+shape(44*2+1,0)+shape(45*2+1,0)+shape(46*2+1,0)+shape(47*2+1,0))/4;
+		eye2.x = (shape(42*2,0)+shape(43*2,0)+shape(44*2,0)+shape(45*2,0)+shape(46*2,0)+shape(47*2,0))/6;
+		eye2.y = (shape(42*2+1,0)+shape(43*2+1,0)+shape(44*2+1,0)+shape(45*2+1,0)+shape(46*2+1,0)+shape(47*2+1,0))/6;
 	}
 
 	/*!

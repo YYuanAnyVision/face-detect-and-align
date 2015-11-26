@@ -355,15 +355,15 @@ public:
 		double angle =  atan2(dy,dx)*180.0/CV_PI;
 
         // desmond
-		const double DESIRED_LEFT_EYE_X = 0.3;     // align 细致的参数
-		const double DESIRED_LEFT_EYE_Y = 0.35;
+		//const double DESIRED_LEFT_EYE_X = 0.3;     // align 细致的参数
+		//const double DESIRED_LEFT_EYE_Y = 0.35;
         
         // yy
 		//const double DESIRED_LEFT_EYE_X = 0.32;     // align 细致的参数
 		//const double DESIRED_LEFT_EYE_Y = 0.3;
 
-		//const double DESIRED_LEFT_EYE_X = 0.4;     //  pre align 的参数
-		//const double DESIRED_LEFT_EYE_Y = 0.42;
+		const double DESIRED_LEFT_EYE_X = 0.4;     //  pre align 的参数
+		const double DESIRED_LEFT_EYE_Y = 0.42;
 
 		const double DESIRED_RIGHT_EYE_X=1.0f-DESIRED_LEFT_EYE_X; 
 

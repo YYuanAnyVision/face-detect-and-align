@@ -76,7 +76,7 @@ void process_folder(  const string &folder_path,
 
         vector<Rect> faces;
         vector<double> confs;
-        fhog_sc.detectMultiScale( input_img, faces, confs, Size(30,30), Size(800,800), 1.2, 1, 0);
+        fhog_sc.detectMultiScale( input_img, faces, confs, Size(30,30), Size(800,800), 1.1, 1, -0.2 );
 
         if( faces.size() > 1)
             continue;
@@ -87,7 +87,7 @@ void process_folder(  const string &folder_path,
             /* crop */
             shape_type shape = sp( input_img, faces[index]);
             Mat rotate_face;
-            shape_predictor::align_face( shape, input_img, 268, rotate_face);
+            shape_predictor::align_face( shape, input_img, 400, rotate_face);
 
             /*  draw */
             vector<shape_type> shapes;
@@ -116,8 +116,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/home/yuanyang/Data/gallery/";
-	string where_to_save_images =  "/home/yuanyang/Data/gallery_crop/";
+	string original_image_folder = "/media/yuanyang/disk1/data/face_database/chinese_add1120/to_do/";
+	string where_to_save_images =  "/media/yuanyang/disk1/data/face_database/chinese_add1120/new_2/";
 
 	//string original_image_folder = "/home/yuanyang/Data/id_test_data/id_test_data_original/";
 	//string where_to_save_images =  "/home/yuanyang/Data/id_test_data/verification/";

@@ -387,41 +387,6 @@ public:
 
 
 	/*!
-		rotate the image according to the mouth and eyebrow center
-	!*/
-	static void rotate_image2(	Point eyebrow_center,	/* in : eyeborw center */
-								Point mouth_center,		/* in : mouth center*/
-								const Mat &face_region, /* in : image*/
-								int desired_width,		/* in : desired face image width*/
-								Mat &warp_face) 		/* out: output aligned face image*/
-	{
-        double dy = eyebrow_center.x - mouth_center.x;
-        double dx = eyebrow_center.y - mouth_center.y;
-
-		double len = sqrt(dx*dx+dy*dy);
-		double angle =  -1*atan2(-1*dy,dx)*180.0/CV_PI +180;
-
-        /* 256 --> 0.28, 0.23*/
-        /* 268 --> 0.2899, 0.2421 */
-
-		const double ratio_to_top   = 0.4;     // eyebrow_center to the top of the image
-		const double ratio_of_middle = 0.35;   // ratio of the distance between eyebrow_center to mouth_center
-        
-		double scale =  desired_width*ratio_of_middle / len;
-
-		cv::Mat rot_mat = cv::getRotationMatrix2D(eyebrow_center, angle, scale);//绕原图像两眼连线中心点旋转，旋转角度为angle，缩放尺度为scale  
-
-		double ex=desired_width* 0.5f - eyebrow_center.x;//获取x方向的平移因子,即目标两眼连线中心点的x坐标—原图像两眼连线中心点x坐标  
-		double ey =  desired_width*ratio_to_top -eyebrow_center.y;//获取x方向的平移因子,即目标两眼连线中心点的x坐标—原图像两眼连线中心点x坐标  
-		rot_mat.at<double>(0, 2) += ex;//将上述结果加到旋转矩阵中控制x平移的位置  
-		rot_mat.at<double>(1, 2) += ey;//将上述结果加到旋转矩阵中控制y平移的位置  
-
-		warp_face = cv::Mat(desired_width, desired_width ,face_region.type());  
-		cv::warpAffine(face_region, warp_face, rot_mat, warp_face.size());  
-	}
-
-
-	/*!
 		align the face using eye center
 	*/
 	static void align_face( const shape_type &shape, 
@@ -435,24 +400,120 @@ public:
 	}
 
 
-	/*!
-		align the face using eyebrow center and mouth center
-	*/
-	static void align_face2( const shape_type &shape, 
-							 const Mat &input_image,
-							 int desired_width,
-							 Mat &aligned_face)
-	{
-        Point mouth_center;
-        Point eyebrow_center;
-
-        mouth_center.x = (shape(50*2,0) + shape(51*2,0) + shape(52*2,0))/3;
-        mouth_center.y = (shape(50*2+1,0) + shape(51*2+1,0) + shape(52*2+1,0))/3;
-        eyebrow_center.x = shape(27*2,0);
-        eyebrow_center.y = shape(27*2+1,0);
+    /*!
+     *   convert a set of points into Mat 
+     !*/
+    static Mat from_vector_to_shape( const vector<Point2f> &point_set )
+    {
+        assert( !point_set.empty() );
+        Mat points = Mat( point_set.size()*2, 1, CV_32F);
         
-		rotate_image2(eyebrow_center, mouth_center,input_image, desired_width, aligned_face);
-	}
+        for( unsigned int i=0; i < point_set.size(); i++ )
+        {
+            points.at<float>( i*2, 0)   = point_set[i].x;
+            points.at<float>( i*2+1, 0) = point_set[i].y;
+        }
+
+        return points;
+    }
+
+    static Point2f get_center_from_set( const vector<Point2f> &point_set)
+    {
+        Point2f center(0,0);
+        for(unsigned int i=0; i < point_set.size(); i++)
+        {
+            center.x += point_set[i].x;
+            center.y += point_set[i].y;
+        }
+        center.x /= point_set.size();
+        center.y /= point_set.size();
+        return center;
+    }
+
+	/*!
+		extract_face_chip, dlib like version
+	*/
+	static void align_face_new( 
+                    const shape_type &shape,          /*  in : detected shape */
+					const Mat &input_image,           /*  in : original image */
+					Mat &aligned_face,                /*  out: outputed extracted chip image*/
+					unsigned int desired_size = 256,  /*  in : desired image width */
+                    float padding = 0               /*  in : padding factor  */
+                    )   
+	{
+        padding = ( padding > 0 ? padding: 0 );
+
+         // Average positions of face points 17-67
+        const double mean_face_shape_x[] = {
+            0.000213256, 0.0752622, 0.18113, 0.29077, 0.393397, 0.586856, 0.689483, 0.799124,
+            0.904991, 0.98004, 0.490127, 0.490127, 0.490127, 0.490127, 0.36688, 0.426036,
+            0.490127, 0.554217, 0.613373, 0.121737, 0.187122, 0.265825, 0.334606, 0.260918,
+            0.182743, 0.645647, 0.714428, 0.793132, 0.858516, 0.79751, 0.719335, 0.254149,
+            0.340985, 0.428858, 0.490127, 0.551395, 0.639268, 0.726104, 0.642159, 0.556721,
+            0.490127, 0.423532, 0.338094, 0.290379, 0.428096, 0.490127, 0.552157, 0.689874,
+            0.553364, 0.490127, 0.42689
+        };
+        const double mean_face_shape_y[] = {
+            0.106454, 0.038915, 0.0187482, 0.0344891, 0.0773906, 0.0773906, 0.0344891,
+            0.0187482, 0.038915, 0.106454, 0.203352, 0.307009, 0.409805, 0.515625, 0.587326,
+            0.609345, 0.628106, 0.609345, 0.587326, 0.216423, 0.178758, 0.179852, 0.231733,
+            0.245099, 0.244077, 0.231733, 0.179852, 0.178758, 0.216423, 0.244077, 0.245099,
+            0.780233, 0.745405, 0.727388, 0.742578, 0.727388, 0.745405, 0.780233, 0.864805,
+            0.902192, 0.909281, 0.902192, 0.864805, 0.784792, 0.778746, 0.785343, 0.778746,
+            0.784792, 0.824182, 0.831803, 0.824182
+        };
+        
+        vector<Point2f> from_points;
+        vector<Point2f> to_points;
+
+        for (unsigned long i = 17; i < shape.rows/2 ; ++i)
+        {
+            // Ignore the lower lip
+            if ((55 <= i && i <= 59) || (65 <= i && i <= 67))
+                continue;
+            // Ignore the eyebrows 
+            if (17 <= i && i <= 26)
+                continue;
+
+            Point2f p;
+            p.x = (padding+mean_face_shape_x[i-17])/(2*padding+1)*desired_size;
+            p.y = (padding+mean_face_shape_y[i-17])/(2*padding+1)*desired_size;
+
+            to_points.push_back(p);
+            from_points.push_back(Point2f(shape(i*2,0), shape(2*i+1,0)));
+        }
+        
+        /*  convert the points to Mat  */
+        Mat from_mat = from_vector_to_shape( from_points );
+        Mat to_mat = from_vector_to_shape( to_points );
+        
+        /*  compute the similar transform  */
+        Matx<float, 2,2> tran_m;
+        Matx<float, 2,1> tran_b;
+        impl::find_tfrom_between_shapes( from_mat, to_mat, tran_m, tran_b);
+        
+        Matx<float, 2, 1> probe_vec(1,0);
+        probe_vec = tran_m*probe_vec;
+
+        const float scale = cv::norm(probe_vec);
+        const float angle = 180.0/CV_PI*std::atan2( probe_vec(1,0), probe_vec(0,0));
+        
+        Point2f from_center( shape(2*27,0), shape(2*27+1, 0));
+
+        Point2f to_center(0,0);
+        to_center.y = desired_size * 0.5;
+        to_center.x = desired_size * 0.3;
+
+        float ex = to_center.x - from_center.x;
+        float ey = to_center.y - from_center.y;
+        
+        cv::Mat rot_mat = cv::getRotationMatrix2D(from_center, -1*angle, scale);
+        rot_mat.at<double>(0,2) += ex;
+        rot_mat.at<double>(1,2) += ey;
+
+		aligned_face = cv::Mat(desired_size, desired_size,input_image.type());  
+		cv::warpAffine(input_image, aligned_face, rot_mat, aligned_face.size());  
+    }
 
 	/*!
 		draw the shape and rect on a image, help to debug

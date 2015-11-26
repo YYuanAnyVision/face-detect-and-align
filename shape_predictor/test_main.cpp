@@ -30,12 +30,13 @@ int main( int argc, char** argv)
 	}
 
 	/* Test */
-	Mat input_img = imread("test2.png",CV_LOAD_IMAGE_GRAYSCALE);
+	Mat input_img = imread( argv[1] ,CV_LOAD_IMAGE_GRAYSCALE);
 	//cv::resize( input_img, input_img, Size(0,0), 2, 2);
 	vector<Rect> faces;
 	vector<double> confs;
 	fhog_sc.detectMultiScale( input_img, faces, confs, Size(80,80), Size(300,300), 1.2, 1, 0);
-	 
+	
+    cout<<"show ..."<<endl;
 	vector<shape_type> shapes;
 	for ( unsigned long i=0;i<faces.size(); i++)
 	{
@@ -47,7 +48,13 @@ int main( int argc, char** argv)
 		shapes.push_back( shape );
 
 		Mat rotate_face;
-		shape_predictor::align_face(shape, input_img, 128, rotate_face);
+
+        /*  1 old align method */
+		//shape_predictor::align_face(shape, input_img, 128, rotate_face);
+
+        /*  2 new align method */
+        shape_predictor::align_face_new(  shape, input_img, rotate_face, 256, 0.2);
+
 		imshow("rotate", rotate_face);
 		waitKey(0);
 	}

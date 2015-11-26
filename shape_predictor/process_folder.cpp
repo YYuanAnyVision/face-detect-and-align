@@ -86,8 +86,14 @@ void process_folder(  const string &folder_path,
         {
             /* crop */
             shape_type shape = sp( input_img, faces[index]);
+
             Mat rotate_face;
-            shape_predictor::align_face( shape, input_img, 400, rotate_face);
+
+			/*  old version extract chip image */
+            //shape_predictor::align_face( shape, input_img, 400, rotate_face);
+
+			/*  new version extract chip image */
+			shape_predictor::align_face_new( shape, input_img, rotate_face, 256, 0.2);
 
             /*  draw */
             vector<shape_type> shapes;
@@ -116,8 +122,8 @@ void process_folder(  const string &folder_path,
 
 int main( int argc, char** argv)
 {
-	string original_image_folder = "/media/yuanyang/disk1/data/face_database/chinese_add1120/to_do/";
-	string where_to_save_images =  "/media/yuanyang/disk1/data/face_database/chinese_add1120/new_2/";
+	string original_image_folder = "/mnt/disk1/data/face/download/";
+	string where_to_save_images =  "/mnt/disk1/data/face/download_crop/";
 
 	//string original_image_folder = "/home/yuanyang/Data/id_test_data/id_test_data_original/";
 	//string where_to_save_images =  "/home/yuanyang/Data/id_test_data/verification/";

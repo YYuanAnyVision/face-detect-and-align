@@ -501,8 +501,8 @@ public:
         Point2f from_center( shape(2*27,0), shape(2*27+1, 0));
 
         Point2f to_center(0,0);
-        to_center.y = desired_size * 0.5;
-        to_center.x = desired_size * 0.3;
+        to_center.y = desired_size * 0.3;
+        to_center.x = desired_size * 0.5;
 
         float ex = to_center.x - from_center.x;
         float ey = to_center.y - from_center.y;
